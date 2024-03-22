@@ -30,14 +30,14 @@ def chunks(iterable, n):
     """
     if isinstance(n, int):
         for i in range(0, len(iterable), n):
-            yield iterable[i:i + n]
+            yield iterable[i : i + n]
     elif isinstance(n, list):
         acc = 0
         if sum(n) < len(iterable):
             n.append(len(iterable))
         for i in n:
             if acc < len(iterable):
-                yield iterable[acc: acc + i]
+                yield iterable[acc : acc + i]
                 acc += i
 
 
@@ -52,14 +52,21 @@ def default_archive_directory_builder(sip):
     :type SIP: invenio_sipstore.models.SIP
     :returns: list of str
     """
-    return list(chunks(str(sip.id), [2, 2, ]))
+    return list(
+        chunks(
+            str(sip.id),
+            [
+                2,
+                2,
+            ],
+        )
+    )
 
 
 def default_sipmetadata_name_formatter(sipmetadata):
     """Default generator for the SIPMetadata filenames."""
     return "{name}.{format}".format(
-        name=sipmetadata.type.name,
-        format=sipmetadata.type.format
+        name=sipmetadata.type.name, format=sipmetadata.type.format
     )
 
 
@@ -91,6 +98,5 @@ def secure_sipfile_name_formatter(sipfile):
     ``http://werkzeug.pocoo.org/docs/utils/#werkzeug.utils.secure_filename``
     """
     return "{uuid}-{name}".format(
-        uuid=str(sipfile.file_id),
-        name=secure_filename(sipfile.filepath)
+        uuid=str(sipfile.file_id), name=secure_filename(sipfile.filepath)
     )

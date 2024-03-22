@@ -21,20 +21,20 @@ class SIPModelView(ModelView):
     can_delete = False
     can_view_details = True
     column_display_all_relations = True
-    column_list = (
-        'id', 'user_id', 'agent', 'archivable', 'archived'
-    )
+    column_list = ("id", "user_id", "agent", "archivable", "archived")
     column_labels = {
-        'id': 'UUID',
-        'user_id': 'User ID',
-        'agent': 'Agent',
-        'archivable': 'Archivable',
-        'archived': 'Archived'
+        "id": "UUID",
+        "user_id": "User ID",
+        "agent": "Agent",
+        "archivable": "Archivable",
+        "archived": "Archived",
     }
-    column_filters = (
-        'user_id', 'archivable', 'archived'
+    column_filters = ("user_id", "archivable", "archived")
+    column_searchable_list = (
+        "id",
+        "user_id",
+        "agent",
     )
-    column_searchable_list = ('id', 'user_id', 'agent', )
     page_size = 25
 
 
@@ -57,20 +57,20 @@ class SIPMetadataModelView(ModelView):
     can_view_details = True
     column_display_all_relations = True
     column_list = (
-        'type.name',
-        'content',
-        'sip.id',
-        'sip.agent',
-        'sip.archivable',
-        'sip.archived'
+        "type.name",
+        "content",
+        "sip.id",
+        "sip.agent",
+        "sip.archivable",
+        "sip.archived",
     )
     column_labels = {
-        'type.name': 'Type',
-        'content': 'Content',
-        'sip.id': 'SIP',
-        'sip.agent': 'Agent',
-        'sip.archivable': 'Archivable',
-        'sip.archived': 'Archived'
+        "type.name": "Type",
+        "content": "Content",
+        "sip.id": "SIP",
+        "sip.agent": "Agent",
+        "sip.archivable": "Archivable",
+        "sip.archived": "Archived",
     }
     page_size = 25
 
@@ -96,28 +96,22 @@ class RecordSIPModelView(ModelView):
     page_size = 25
 
 
-sip_adminview = dict(
-    modelview=SIPModelView,
-    model=SIP,
-    name='SIP',
-    category='Records')
+sip_adminview = dict(modelview=SIPModelView, model=SIP, name="SIP", category="Records")
 sipfile_adminview = dict(
-    modelview=SIPFileModelView,
-    model=SIPFile,
-    name='SIPFile',
-    category='Records')
+    modelview=SIPFileModelView, model=SIPFile, name="SIPFile", category="Records"
+)
 sipmetadata_adminview = dict(
     modelview=SIPMetadataModelView,
     model=SIPMetadata,
-    name='SIPMetadata',
-    category='Records')
+    name="SIPMetadata",
+    category="Records",
+)
 sipmetadatatype_adminview = dict(
     modelview=SIPMetadataTypeModelView,
     model=SIPMetadataType,
-    name='SIPMetadataType',
-    category='Records')
+    name="SIPMetadataType",
+    category="Records",
+)
 recordsip_adminview = dict(
-    modelview=RecordSIPModelView,
-    model=RecordSIP,
-    name='RecordSIP',
-    category='Records')
+    modelview=RecordSIPModelView, model=RecordSIP, name="RecordSIP", category="Records"
+)

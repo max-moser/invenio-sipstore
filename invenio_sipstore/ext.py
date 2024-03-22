@@ -27,9 +27,7 @@ class _InvenioSIPStoreState(object):
     @cached_property
     def storage_factory(self):
         """Load default storage factory."""
-        return load_or_import_from_config(
-            'SIPSTORE_FILE_STORAGE_FACTORY', app=self.app
-        )
+        return load_or_import_from_config("SIPSTORE_FILE_STORAGE_FACTORY", app=self.app)
 
     @cached_property
     def archive_location(self):
@@ -38,25 +36,25 @@ class _InvenioSIPStoreState(object):
         :rtype: str
         :return: URI to the archive root.
         """
-        name = self.app.config['SIPSTORE_ARCHIVER_LOCATION_NAME']
+        name = self.app.config["SIPSTORE_ARCHIVER_LOCATION_NAME"]
         return Location.query.filter_by(name=name).one().uri
 
     @cached_property
     def archive_path_builder(self):
         return load_or_import_from_config(
-            'SIPSTORE_ARCHIVER_DIRECTORY_BUILDER', app=self.app
+            "SIPSTORE_ARCHIVER_DIRECTORY_BUILDER", app=self.app
         )
 
     @cached_property
     def sipmetadata_name_formatter(self):
         return load_or_import_from_config(
-            'SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER', app=self.app
+            "SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER", app=self.app
         )
 
     @cached_property
     def sipfile_name_formatter(self):
         return load_or_import_from_config(
-            'SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER', app=self.app
+            "SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER", app=self.app
         )
 
 
@@ -71,10 +69,10 @@ class InvenioSIPStore(object):
     def init_app(self, app):
         """Flask application initialization."""
         self.init_config(app)
-        app.extensions['invenio-sipstore'] = _InvenioSIPStoreState(app)
+        app.extensions["invenio-sipstore"] = _InvenioSIPStoreState(app)
 
     def init_config(self, app):
         """Initialize configuration."""
         for k in dir(config):
-            if k.startswith('SIPSTORE_'):
+            if k.startswith("SIPSTORE_"):
                 app.config.setdefault(k, getattr(config, k))

@@ -44,9 +44,9 @@ class SIP(object):
         """
         agent = dict()
         if has_request_context() and request.remote_addr:
-            agent['ip_address'] = request.remote_addr
+            agent["ip_address"] = request.remote_addr
             if current_user.is_authenticated and current_user.email:
-                agent['email'] = current_user.email
+                agent["email"] = current_user.email
         return agent
 
     @property
@@ -130,8 +130,7 @@ class SIP(object):
         return sm
 
     @classmethod
-    def create(cls, archivable, files=None, metadata=None, user_id=None,
-               agent=None):
+    def create(cls, archivable, files=None, metadata=None, user_id=None, agent=None):
         """Create a SIP, from the PID and the Record.
 
         Apart from the SIP itself, it also creates ``SIPFile`` objects for
@@ -155,18 +154,19 @@ class SIP(object):
         :rtype: :py:class:`invenio_sipstore.api.SIP`
         """
         if not user_id:
-            user_id = (None if not current_user or current_user.is_anonymous
-                       else current_user.get_id())
+            user_id = (
+                None
+                if not current_user or current_user.is_anonymous
+                else current_user.get_id()
+            )
         if not agent:
-            agent_factory = import_string(
-                current_app.config['SIPSTORE_AGENT_FACTORY'])
+            agent_factory = import_string(current_app.config["SIPSTORE_AGENT_FACTORY"])
             agent = agent_factory()
         files = [] if not files else files
         metadata = {} if not metadata else metadata
 
         with db.session.begin_nested():
-            sip = cls(SIP_.create(user_id=user_id, agent=agent,
-                                  archivable=archivable))
+            sip = cls(SIP_.create(user_id=user_id, agent=agent, archivable=archivable))
             for f in files:
                 sip.attach_file(f)
             for type, content in metadata.items():
@@ -204,8 +204,16 @@ class RecordSIP(object):
         return self._sip
 
     @classmethod
-    def create(cls, pid, record, archivable, create_sip_files=True,
-               user_id=None, agent=None, sip_metadata_type=None):
+    def create(
+        cls,
+        pid,
+        record,
+        archivable,
+        create_sip_files=True,
+        user_id=None,
+        agent=None,
+        sip_metadata_type=None,
+    ):
         """Create a SIP, from the PID and the Record.
 
         Apart from the SIP itself, it also creates ``RecordSIP`` for the
@@ -236,11 +244,12 @@ class RecordSIP(object):
         if sip_metadata_type:
             mtype = SIPMetadataType.get_from_name(sip_metadata_type)
         else:
-            mtype = SIPMetadataType.get_from_schema(record['$schema'])
+            mtype = SIPMetadataType.get_from_schema(record["$schema"])
         metadata = {mtype.name: json.dumps(record.dumps())}
         with db.session.begin_nested():
-            sip = SIP.create(archivable, files=files, metadata=metadata,
-                             user_id=user_id, agent=agent)
+            sip = SIP.create(
+                archivable, files=files, metadata=metadata, user_id=user_id, agent=agent
+            )
             model = RecordSIP_(sip_id=sip.id, pid_id=pid.id)
             db.session.add(model)
             recsip = cls(model, sip)

@@ -27,50 +27,44 @@ from werkzeug.local import LocalProxy
 
 from .errors import SIPUserDoesNotExist
 
-current_jsonschemas = LocalProxy(
-    lambda: current_app.extensions['invenio-jsonschemas']
-)
+current_jsonschemas = LocalProxy(lambda: current_app.extensions["invenio-jsonschemas"])
 
 
 class SIP(db.Model, Timestamp):
     """Submission Information Package model."""
 
-    __tablename__ = 'sipstore_sip'
+    __tablename__ = "sipstore_sip"
 
     id = db.Column(UUIDType, primary_key=True, default=uuid.uuid4)
     """Id of SIP."""
 
     user_id = db.Column(
         db.Integer,
-        db.ForeignKey(User.id, name='fk_sipstore_sip_user_id'),
+        db.ForeignKey(User.id, name="fk_sipstore_sip_user_id"),
         nullable=True,
-        default=None)
+        default=None,
+    )
     """User responsible for the SIP."""
 
     agent = db.Column(JSONType, default=lambda: dict(), nullable=False)
     """Agent information regarding given SIP."""
 
-    archivable = db.Column(
-        db.Boolean(name='archivable'),
-        nullable=False,
-        default=True)
+    archivable = db.Column(db.Boolean(name="archivable"), nullable=False, default=True)
     """Boolean stating if the SIP should be archived or not."""
 
-    archived = db.Column(
-        db.Boolean(name='archived'),
-        nullable=False,
-        default=False)
+    archived = db.Column(db.Boolean(name="archived"), nullable=False, default=False)
     """Boolean stating if the SIP has been archived or not."""
 
     #
     # Relationships
     #
-    user = db.relationship(User, backref='sips', foreign_keys=[user_id])
+    user = db.relationship(User, backref="sips", foreign_keys=[user_id])
     """Relation to the User responsible for the SIP."""
 
     @classmethod
-    def create(cls, user_id=None, agent=None, id_=None, archivable=True,
-               archived=False):
+    def create(
+        cls, user_id=None, agent=None, id_=None, archivable=True, archived=False
+    ):
         """Create a Submission Information Package object.
 
         :param user_id: Id of the user responsible for the SIP.
@@ -85,12 +79,16 @@ class SIP(db.Model, Timestamp):
 
         agent = agent or dict()
 
-        if current_app.config['SIPSTORE_AGENT_JSONSCHEMA_ENABLED']:
-            agent.setdefault('$schema', current_jsonschemas.path_to_url(
-                current_app.config['SIPSTORE_DEFAULT_AGENT_JSONSCHEMA']))
-            schema_path = current_jsonschemas.url_to_path(agent['$schema'])
+        if current_app.config["SIPSTORE_AGENT_JSONSCHEMA_ENABLED"]:
+            agent.setdefault(
+                "$schema",
+                current_jsonschemas.path_to_url(
+                    current_app.config["SIPSTORE_DEFAULT_AGENT_JSONSCHEMA"]
+                ),
+            )
+            schema_path = current_jsonschemas.url_to_path(agent["$schema"])
             if not schema_path:
-                raise JSONSchemaNotFound(agent['$schema'])
+                raise JSONSchemaNotFound(agent["$schema"])
 
             schema = current_jsonschemas.get_schema(schema_path)
             validate(agent, schema)
@@ -101,7 +99,7 @@ class SIP(db.Model, Timestamp):
                 user_id=user_id,
                 agent=agent,
                 archivable=archivable,
-                archived=archived
+                archived=archived,
             )
             db.session.add(obj)
         return obj
@@ -110,24 +108,29 @@ class SIP(db.Model, Timestamp):
 class SIPFile(db.Model, Timestamp):
     """Extra SIP info regarding files."""
 
-    __tablename__ = 'sipstore_sipfile'
+    __tablename__ = "sipstore_sipfile"
 
     sip_id = db.Column(
         UUIDType,
-        db.ForeignKey(SIP.id, name='fk_sipstore_sipfile_sip_id'),
-        primary_key=True)
+        db.ForeignKey(SIP.id, name="fk_sipstore_sipfile_sip_id"),
+        primary_key=True,
+    )
     """Id of SIP."""
 
     filepath = db.Column(
-        db.Text().with_variant(mysql.VARCHAR(255), 'mysql'), nullable=False,
-        primary_key=True)
+        db.Text().with_variant(mysql.VARCHAR(255), "mysql"),
+        nullable=False,
+        primary_key=True,
+    )
     """Filepath of submitted file within the SIP record."""
 
     file_id = db.Column(
         UUIDType,
-        db.ForeignKey(FileInstance.id, name='fk_sipstore_sipfile_file_id',
-                      ondelete='RESTRICT'),
-        nullable=False)
+        db.ForeignKey(
+            FileInstance.id, name="fk_sipstore_sipfile_file_id", ondelete="RESTRICT"
+        ),
+        nullable=False,
+    )
     """Id of the FileInstance."""
 
     @property
@@ -145,22 +148,20 @@ class SIPFile(db.Model, Timestamp):
         """Return the location of the file in the current storage."""
         return self.file.uri
 
-    @validates('filepath')
+    @validates("filepath")
     def validate_key(self, filepath, filepath_):
         """Validate key."""
-        if len(filepath_) > current_app.config['SIPSTORE_FILEPATH_MAX_LEN']:
-            raise ValueError(
-                'Filepath too long ({0}).'.format(len(filepath_)))
+        if len(filepath_) > current_app.config["SIPSTORE_FILEPATH_MAX_LEN"]:
+            raise ValueError("Filepath too long ({0}).".format(len(filepath_)))
         return filepath_
 
     #
     # Relations
     #
-    sip = db.relationship(SIP, backref='sip_files', foreign_keys=[sip_id])
+    sip = db.relationship(SIP, backref="sip_files", foreign_keys=[sip_id])
     """Relation to the SIP along which given file was submitted."""
 
-    file = db.relationship(FileInstance, backref='sip_files',
-                           foreign_keys=[file_id])
+    file = db.relationship(FileInstance, backref="sip_files", foreign_keys=[file_id])
     """Relation to the SIP along which given file was submitted."""
 
 
@@ -171,7 +172,7 @@ class SIPMetadataType(db.Model):
     validate the structure of the content.
     """
 
-    __tablename__ = 'sipstore_sipmetadatatype'
+    __tablename__ = "sipstore_sipmetadatatype"
 
     id = db.Column(db.Integer(), primary_key=True)
     """ID of the SIPMetadataType object."""
@@ -210,17 +211,18 @@ class SIPMetadataType(db.Model):
 class SIPMetadata(db.Model, Timestamp):
     """Extra SIP info regarding metadata."""
 
-    __tablename__ = 'sipstore_sipmetadata'
+    __tablename__ = "sipstore_sipmetadata"
 
-    sip_id = db.Column(UUIDType,
-                       db.ForeignKey(SIP.id, name='fk_sipmetadata_sip_id'),
-                       primary_key=True)
+    sip_id = db.Column(
+        UUIDType, db.ForeignKey(SIP.id, name="fk_sipmetadata_sip_id"), primary_key=True
+    )
     """Id of SIP."""
 
-    type_id = db.Column(db.Integer(),
-                        db.ForeignKey(SIPMetadataType.id,
-                                      name='fk_sipmetadatatype_type'),
-                        primary_key=True)
+    type_id = db.Column(
+        db.Integer(),
+        db.ForeignKey(SIPMetadataType.id, name="fk_sipmetadatatype_type"),
+        primary_key=True,
+    )
     """ID of the metadata type."""
 
     content = db.Column(db.Text, nullable=False)
@@ -229,7 +231,7 @@ class SIPMetadata(db.Model, Timestamp):
     #
     # Relations
     #
-    sip = db.relationship(SIP, backref='sip_metadata', foreign_keys=[sip_id])
+    sip = db.relationship(SIP, backref="sip_metadata", foreign_keys=[sip_id])
     """Relation to the SIP along which given metadata was submitted."""
 
     type = db.relationship(SIPMetadataType)
@@ -239,29 +241,31 @@ class SIPMetadata(db.Model, Timestamp):
 class RecordSIP(db.Model, Timestamp):
     """An association table for Records and SIPs."""
 
-    __tablename__ = 'sipstore_recordsip'
+    __tablename__ = "sipstore_recordsip"
 
     sip_id = db.Column(
         UUIDType,
-        db.ForeignKey(SIP.id, name='fk_sipstore_recordsip_sip_id'),
-        primary_key=True)
+        db.ForeignKey(SIP.id, name="fk_sipstore_recordsip_sip_id"),
+        primary_key=True,
+    )
     """Id of SIP."""
 
     pid_id = db.Column(
         db.Integer,
-        db.ForeignKey(PersistentIdentifier.id,
-                      name='fk_sipstore_recordsip_pid_id'),
-        primary_key=True)
+        db.ForeignKey(PersistentIdentifier.id, name="fk_sipstore_recordsip_pid_id"),
+        primary_key=True,
+    )
     """Id of the PID pointing to the record."""
 
     #
     # Relations
     #
-    sip = db.relationship(SIP, backref='record_sips', foreign_keys=[sip_id])
+    sip = db.relationship(SIP, backref="record_sips", foreign_keys=[sip_id])
     """Relation to the SIP associated with the record."""
 
-    pid = db.relationship(PersistentIdentifier, backref='record_sips',
-                          foreign_keys=[pid_id])
+    pid = db.relationship(
+        PersistentIdentifier, backref="record_sips", foreign_keys=[pid_id]
+    )
     """Relation to the PID associated with the record SIP."""
 
     @classmethod

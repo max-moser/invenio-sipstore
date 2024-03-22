@@ -77,9 +77,15 @@ class BaseArchiver(object):
     * :py:data:`BaseArchiver._write_extra()`
     """
 
-    def __init__(self, sip, data_dir='files', metadata_dir='metadata',
-                 extra_dir='', storage_factory=None,
-                 filenames_mapping_file=None):
+    def __init__(
+        self,
+        sip,
+        data_dir="files",
+        metadata_dir="metadata",
+        extra_dir="",
+        storage_factory=None,
+        filenames_mapping_file=None,
+    ):
         """Base archiver constructor.
 
         :param sip: the SIP to archive.
@@ -98,8 +104,7 @@ class BaseArchiver(object):
         self.data_dir = data_dir
         self.metadata_dir = metadata_dir
         self.extra_dir = extra_dir
-        self.storage_factory = storage_factory or \
-            current_sipstore.storage_factory
+        self.storage_factory = storage_factory or current_sipstore.storage_factory
         self.filenames_mapping_file = filenames_mapping_file
 
     def get_archive_base_uri(self):
@@ -153,9 +158,7 @@ class BaseArchiver(object):
         :rtype: str
         """
         return os.path.join(
-            self.get_archive_base_uri(),
-            self.get_archive_subpath(),
-            filepath
+            self.get_archive_base_uri(), self.get_archive_subpath(), filepath
         )
 
     def _generate_sipfile_info(self, sipfile):
@@ -177,8 +180,9 @@ class BaseArchiver(object):
         filename = current_sipstore.sipmetadata_name_formatter(sipmetadata)
         filepath = os.path.join(self.metadata_dir, filename)
         return dict(
-            checksum='md5:{}'.format(str(
-                md5(sipmetadata.content.encode('utf-8')).hexdigest())),
+            checksum="md5:{}".format(
+                str(md5(sipmetadata.content.encode("utf-8")).hexdigest())
+            ),
             size=len(sipmetadata.content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),
@@ -189,12 +193,11 @@ class BaseArchiver(object):
         """Generate the file information dictionary from a raw content."""
         filepath = os.path.join(self.extra_dir, filename)
         return dict(
-            checksum='md5:{}'.format(
-                    str(md5(content.encode('utf-8')).hexdigest())),
+            checksum="md5:{}".format(str(md5(content.encode("utf-8")).hexdigest())),
             size=len(content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),
-            content=content
+            content=content,
         )
 
     def _get_sipfile_filename_mapping(self, filesinfo):
@@ -213,9 +216,9 @@ class BaseArchiver(object):
         See ``default_sipfile_name_formatter()`` and
         ``secure_sipfile_name_formatter()``.
         """
-        content = '\n'.join('{0} {1}'.format(f['filename'],
-                                             f['sipfilepath'])
-                            for f in filesinfo)
+        content = "\n".join(
+            "{0} {1}".format(f["filename"], f["sipfilepath"]) for f in filesinfo
+        )
         return self._generate_extra_info(content, self.filenames_mapping_file)
 
     def _get_data_files(self):
@@ -260,7 +263,9 @@ class BaseArchiver(object):
         """
         ret = []
         if self.filenames_mapping_file and data_files:
-            ret = [self._get_sipfile_filename_mapping(data_files), ]
+            ret = [
+                self._get_sipfile_filename_mapping(data_files),
+            ]
         return ret
 
     def get_all_files(self):
@@ -294,10 +299,10 @@ class BaseArchiver(object):
         if sipfile:
             fi = sipfile.file
         else:
-            fi = FileInstance.query.get(fileinfo['file_uuid'])
-        sf = self.storage_factory(fileurl=fileinfo['fullpath'],
-                                  size=fileinfo['size'],
-                                  modified=fi.updated)
+            fi = FileInstance.query.get(fileinfo["file_uuid"])
+        sf = self.storage_factory(
+            fileurl=fileinfo["fullpath"], size=fileinfo["size"], modified=fi.updated
+        )
         return sf.copy(fi.storage())
 
     def _write_extra(self, fileinfo=None, content=None, filename=None):
@@ -315,9 +320,8 @@ class BaseArchiver(object):
         assert fileinfo or (content and filename)
         if not fileinfo:
             fileinfo = self._generate_extra_info(content, filename)
-        sf = self.storage_factory(fileurl=fileinfo['fullpath'],
-                                  size=fileinfo['size'])
-        return sf.save(BytesIO(fileinfo['content'].encode('utf-8')))
+        sf = self.storage_factory(fileurl=fileinfo["fullpath"], size=fileinfo["size"])
+        return sf.save(BytesIO(fileinfo["content"].encode("utf-8")))
 
     def _write_sipmetadata(self, fileinfo=None, sipmetadata=None):
         """Write SIPMetadata file to disk."""
@@ -325,12 +329,13 @@ class BaseArchiver(object):
         if not fileinfo:
             fileinfo = self._generate_sipmetadata_info(sipmetadata)
         if not sipmetadata:
-            sipmetadata = SIPMetadata.query.get(
-                (self.sip.id, fileinfo['metadata_id']))
-        sf = self.storage_factory(fileurl=fileinfo['fullpath'],
-                                  size=fileinfo['size'],
-                                  modified=sipmetadata.updated)
-        return sf.save(BytesIO(sipmetadata.content.encode('utf-8')))
+            sipmetadata = SIPMetadata.query.get((self.sip.id, fileinfo["metadata_id"]))
+        sf = self.storage_factory(
+            fileurl=fileinfo["fullpath"],
+            size=fileinfo["size"],
+            modified=sipmetadata.updated,
+        )
+        return sf.save(BytesIO(sipmetadata.content.encode("utf-8")))
 
     def write_all_files(self, filesinfo=None):
         """Write all files to the archive.
@@ -361,29 +366,32 @@ class BaseArchiver(object):
         """
         if not filesinfo:
             filesinfo = self.get_all_files()
-        keys = ['file_uuid', 'metadata_id', 'content']
+        keys = ["file_uuid", "metadata_id", "content"]
         if not all(any(k in fi for k in keys) for fi in filesinfo):
             raise ValueError(
                 "Missing one of mandatory keys ({keys}) in one or more "
                 "file-information entries: {filesinfo}".format(
-                    keys=keys,
-                    filesinfo=filesinfo))
-        total_size = sum(fi['size'] for fi in filesinfo)
+                    keys=keys, filesinfo=filesinfo
+                )
+            )
+        total_size = sum(fi["size"] for fi in filesinfo)
         copied_size = 0
         for idx, fi in enumerate(filesinfo, 1):
-            if 'file_uuid' in fi:
+            if "file_uuid" in fi:
                 self._write_sipfile(fileinfo=fi)
-            elif 'metadata_id' in fi:
+            elif "metadata_id" in fi:
                 self._write_sipmetadata(fileinfo=fi)
             else:  # (if 'content' in fi)
                 self._write_extra(fileinfo=fi)
 
-            copied_size += fi['size']
-            sipstore_archiver_status.send({
-                'total_files': len(filesinfo),
-                'total_size': total_size,
-                'copied_files': idx,
-                'copied_size': copied_size,
-                'current_filename': fi['filepath'],
-                'current_filesize': fi['size']
-            })
+            copied_size += fi["size"]
+            sipstore_archiver_status.send(
+                {
+                    "total_files": len(filesinfo),
+                    "total_size": total_size,
+                    "copied_files": idx,
+                    "copied_size": copied_size,
+                    "current_filename": fi["filepath"],
+                    "current_filesize": fi["size"],
+                }
+            )
