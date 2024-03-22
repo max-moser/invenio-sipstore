@@ -21,11 +21,11 @@ SIPSTORE_DEFAULT_BAGIT_JSONSCHEMA = "sipstore/bagit-v1.0.0.json"
 SIPSTORE_AGENT_JSONSCHEMA_ENABLED = True
 """Enable SIP agent validation by default."""
 
-SIPSTORE_AGENT_FACTORY = "invenio_sipstore.api.SIP._build_agent_info"
+SIPSTORE_AGENT_FACTORY = "invenio_sipstore.api._build_agent_info"
 """Factory to build the agent, stored for the information about the SIP."""
 
 SIPSTORE_AGENT_TAGS_FACTORY = (
-    "invenio_sipstore.archivers.BagItArchiver._generate_agent_tags"
+    "invenio_sipstore.archivers.bagit_archiver._generate_agent_tags"
 )
 """Factory to build agent information tags."""
 

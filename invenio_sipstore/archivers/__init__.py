@@ -15,8 +15,3 @@ can write packages according to "The BagIt File Packaging Format (V0.97)".
 New formats can be implemented by subclassing
 :py:class:`~.base_archiver.BaseArchiver`.
 """
-
-from __future__ import absolute_import, print_function
-
-from .base_archiver import BaseArchiver
-from .bagit_archiver import BagItArchiver

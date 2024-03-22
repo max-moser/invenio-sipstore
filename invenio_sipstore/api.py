@@ -254,3 +254,8 @@ class RecordSIP(object):
             db.session.add(model)
             recsip = cls(model, sip)
         return recsip
+
+
+def _build_agent_info():
+    """Alias for ``SIP._build_agent_info()``."""
+    SIP._build_agent_info()

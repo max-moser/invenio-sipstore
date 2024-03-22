@@ -105,22 +105,23 @@ def test_SIP_metadata(db):
 
 def test_SIP_build_agent_info(app, mocker):
     """Test SIP._build_agent_info static method."""
-    # with no information, we get an empty dict
-    agent = SIP._build_agent_info()
-    assert agent == {}
-    # we mock flask function to give more info
-    mocker.patch(
-        "invenio_sipstore.api.has_request_context", return_value=True, autospec=True
-    )
-    mock_request = mocker.patch("invenio_sipstore.api.request")
-    type(mock_request).remote_addr = mocker.PropertyMock(return_value="localhost")
-    mock_current_user = mocker.patch("invenio_sipstore.api.current_user")
-    type(mock_current_user).is_authenticated = mocker.PropertyMock(return_value=True)
-    type(mock_current_user).email = mocker.PropertyMock(
-        return_value="test@invenioso.org"
-    )
-    agent = SIP._build_agent_info()
-    assert agent == {"ip_address": "localhost", "email": "test@invenioso.org"}
+    with app.test_request_context():
+        # with no information, we get an empty dict
+        agent = SIP._build_agent_info()
+        assert agent == {}
+        # we mock flask function to give more info
+        mocker.patch(
+            "invenio_sipstore.api.has_request_context", return_value=True, autospec=True
+        )
+        mock_request = mocker.patch("invenio_sipstore.api.request")
+        type(mock_request).remote_addr = mocker.PropertyMock(return_value="localhost")
+        mock_current_user = mocker.patch("invenio_sipstore.api.current_user")
+        type(mock_current_user).is_authenticated = mocker.PropertyMock(return_value=True)
+        type(mock_current_user).email = mocker.PropertyMock(
+            return_value="test@invenioso.org"
+        )
+        agent = SIP._build_agent_info()
+        assert agent == {"ip_address": "localhost", "email": "test@invenioso.org"}
 
 
 def test_SIP_create(app, db, mocker):
@@ -172,7 +173,7 @@ def test_SIP_create(app, db, mocker):
     rmtree(tmppath)
 
 
-def test_RecordSIP(db):
+def test_RecordSIP(db, locations):
     """Test RecordSIP API class."""
     user = create_test_user("test@example.org")
     agent = {"email": "user@invenio.org", "ip_address": "1.1.1.1"}
@@ -197,14 +198,17 @@ def test_RecordSIP(db):
     assert api_recordsip.sip.id == sip.id
 
 
-def test_RecordSIP_create(db, mocker):
+def test_RecordSIP_create(app, db, mocker):
     """Test create method from the API class RecordSIP."""
     # we setup a file storage
     tmppath = tempfile.mkdtemp()
     db.session.add(Location(name="default", uri=tmppath, default=True))
     # setup metadata
     mtype = SIPMetadataType(
-        title="JSON Test", name="json-test", format="json", schema="url://to/schema"
+        title="JSON Test",
+        name="json-test",
+        format="json",
+        schema="local://definitions#/schema.json",
     )
     db.session.add(mtype)
     db.session.commit()
@@ -217,11 +221,26 @@ def test_RecordSIP_create(db, mocker):
         object_uuid=recid,
         status=PIDStatus.REGISTERED,
     )
-    mocker.patch(
-        "invenio_records.api.RecordBase.validate", return_value=True, autospec=True
-    )
+
+    class SkipValidator:
+        """Custom validator for skipping the checks."""
+
+        def __init__(self, *args, **kwargs):
+            """Constructor."""
+            pass
+
+        def check_schema(self, *args, **kwargs):
+            """Assume the schema is valid."""
+            return True
+
+        def iter_errors(self, *args, **kwargs):
+            """Report no errors."""
+            return []
+
     record = Record.create(
-        {"title": "record test", "$schema": "url://to/schema"}, recid
+        {"title": "record test", "$schema": "local://definitions#/schema.json"},
+        recid,
+        validator=SkipValidator,
     )
     # we add a file to the record
     bucket = Bucket.create()

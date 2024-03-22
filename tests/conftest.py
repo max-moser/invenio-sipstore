@@ -17,19 +17,22 @@ import tempfile
 
 import pytest
 from flask import Flask
-from fs.opener import opener
+from fs.opener import open_fs
 from invenio_accounts import InvenioAccounts
 from invenio_db import InvenioDB
 from invenio_db import db as db_
 from invenio_files_rest import InvenioFilesREST
 from invenio_files_rest.models import FileInstance, Location
+from invenio_i18n import InvenioI18N
 from invenio_jsonschemas import InvenioJSONSchemas
+from invenio_records import InvenioRecords
+from invenio_search import InvenioSearch
 from six import BytesIO, b
 from sqlalchemy_utils.functions import create_database, database_exists, drop_database
 
 from invenio_sipstore import InvenioSIPStore
 from invenio_sipstore.api import SIP as SIPApi
-from invenio_sipstore.archivers import BagItArchiver
+from invenio_sipstore.archivers.bagit_archiver import BagItArchiver
 from invenio_sipstore.models import SIP, SIPFile, SIPMetadataType
 
 
@@ -63,9 +66,12 @@ def base_app(instance_path):
 def app(base_app):
     """Flask application fixture."""
     InvenioDB(base_app)
+    InvenioRecords(base_app)
+    InvenioSearch(base_app)
     InvenioAccounts(base_app)
     InvenioFilesREST(base_app)
     InvenioJSONSchemas(base_app)
+    InvenioI18N(base_app)
     with base_app.app_context():
         yield base_app
 
@@ -227,19 +233,19 @@ def sips(db, locations, sip_metadata_types):
 def archive_fs(locations):
     """Fixture to check the BagIt file generation."""
     archive_path = locations["archive"].uri
-    fs = opener.opendir(archive_path, writeable=False, create_dir=True)
+    fs = open_fs(archive_path, writeable=False, create=True)
     yield fs
-    for d in fs.listdir():
-        fs.removedir(d, force=True)
+    for d in fs.listdir("."):
+        fs.removetree(d)
 
 
 @pytest.yield_fixture()
 def secure_sipfile_name_formatter(app):
     """Temporarily change the default name formatter for SIPFiles."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"]
-    app.config[
-        "SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"
-    ] = "invenio_sipstore.archivers.utils.secure_sipfile_name_formatter"
+    app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = (
+        "invenio_sipstore.archivers.utils.secure_sipfile_name_formatter"
+    )
     yield
     app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = fmt
 
@@ -249,8 +255,8 @@ def custom_sipmetadata_name_formatter(app):
     """Temporarily change the default name formatter for SIPMetadata files."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"]
 
-    app.config[
-        "SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"
-    ] = lambda sm: "{0}-metadata.{1}".format(sm.type.name, sm.type.format)
+    app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = (
+        lambda sm: "{0}-metadata.{1}".format(sm.type.name, sm.type.format)
+    )
     yield
     app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = fmt

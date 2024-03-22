@@ -12,7 +12,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from hashlib import md5
 
-from invenio_sipstore.archivers import BaseArchiver
+from invenio_sipstore.archivers.base_archiver import BaseArchiver
 
 
 def test_getters(db, sips, sip_metadata_types, locations):
@@ -87,9 +87,9 @@ def test_write(db, sips, sip_metadata_types, locations, archive_fs):
     sip = sips[0]
     archiver = BaseArchiver(sip)
     data_files_info = archiver._get_data_files()
-    assert not archive_fs.listdir()  # Empty archive
+    assert not archive_fs.listdir(".")  # Empty archive
     archiver._write_sipfile(data_files_info[0])
-    assert len(archive_fs.listdir()) == 1
+    assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
     assert fs.isfile("files/foobar.txt")
 
@@ -127,11 +127,11 @@ def test_write_all(db, sips, sip_metadata_types, locations, archive_fs):
     """Test the public "write_all_files" method."""
     sip = sips[0]
     archiver = BaseArchiver(sip)
-    assert not archive_fs.listdir()
+    assert not archive_fs.listdir(".")
     archiver.write_all_files()
-    assert len(archive_fs.listdir()) == 1
+    assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
-    assert len(fs.listdir()) == 2
+    assert len(fs.listdir(".")) == 2
     assert len(fs.listdir("metadata")) == 3
     assert len(fs.listdir("files")) == 1
     expected = {
@@ -159,9 +159,9 @@ def test_name_formatters(
     """Test archiving with custom filename formatter."""
     sip = sips[3]  # SIP with some naughty filenames
     archiver = BaseArchiver(sip, filenames_mapping_file="files/filenames.txt")
-    assert not archive_fs.listdir()
+    assert not archive_fs.listdir(".")
     archiver.write_all_files()
-    assert len(archive_fs.listdir()) == 1
+    assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
     assert set(fs.listdir(".")) == set(["metadata", "files"])
     assert len(fs.listdir("metadata")) == 2

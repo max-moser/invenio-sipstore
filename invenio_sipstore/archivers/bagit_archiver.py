@@ -368,3 +368,8 @@ class BagItArchiver(BaseArchiver):
             raise AttributeError("Checksum format is not correct.")
         else:
             return checksum[1]
+
+
+def _generate_agent_tags(agent):
+    """Alias for ``BagItArchiver._generate_agent_tags(agent)``."""
+    return BagItArchiver._generate_agent_tags(agent)

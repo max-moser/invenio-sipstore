@@ -16,7 +16,8 @@ from hashlib import md5
 import pytest
 
 from invenio_sipstore.api import SIP as SIPApi
-from invenio_sipstore.archivers import BagItArchiver, BaseArchiver
+from invenio_sipstore.archivers.bagit_archiver import BagItArchiver
+from invenio_sipstore.archivers.base_archiver import BaseArchiver
 
 
 def fetch_file_endswith(sip, filename_suffix):
@@ -59,9 +60,9 @@ def test_write_all_files(sips, archive_fs):
     """Test the functions used to create an export of the SIP."""
     sip = sips[0]
     archiver = BagItArchiver(sip)
-    assert not len(archive_fs.listdir())
+    assert not len(archive_fs.listdir("."))
     archiver.write_all_files()
-    assert len(archive_fs.listdir()) == 1
+    assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
     assert set(fs.listdir(".")) == set(
         [
@@ -140,10 +141,10 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
     fs2 = archive_fs.opendir(arch2.get_archive_subpath())
     fs3 = archive_fs.opendir(arch3.get_archive_subpath())
     fs5 = archive_fs.opendir(arch5.get_archive_subpath())
-    assert len(fs1.listdir()) == 5
-    assert len(fs2.listdir()) == 6  # Includes 'fetch.txt'
-    assert len(fs3.listdir()) == 6  # Includes 'fetch.txt'
-    assert len(fs5.listdir()) == 6  # Includes 'fetch.txt'
+    assert len(fs1.listdir(".")) == 5
+    assert len(fs2.listdir(".")) == 6  # Includes 'fetch.txt'
+    assert len(fs3.listdir(".")) == 6  # Includes 'fetch.txt'
+    assert len(fs5.listdir(".")) == 6  # Includes 'fetch.txt'
 
     # Check SIP-1,2,3,5 data contents
     assert set(fs1.listdir("data")) == set(["files", "metadata", "filenames.txt"])

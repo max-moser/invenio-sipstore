@@ -23,7 +23,6 @@ tests_require = [
     "pydocstyle>=1.0.0",
     "pytest-cov>=1.8.0",
     "pytest-mock>=1.6.0",
-    "pytest-pep8>=1.0.6",
     "pytest>=3.6.0",
 ]
 
@@ -52,6 +51,7 @@ install_requires = [
     "invenio-pidstore>=1.0.0",
     "invenio-jsonschemas>=1.0.0",
     "invenio-files-rest>=1.0.0a23",
+    "invenio-search[opensearch2]>=2.0",
     "jsonschema>=2.6.0",
 ]
 
