@@ -137,9 +137,11 @@ class BagItArchiver(BaseArchiver):
         :returns: Return the BagIt metadata information (SIPMetadata) instace
             or None if the object does not exist.
         """
-        sm = SIPMetadata.query.filter_by(
-            sip_id=sip.id, type_id=cls._get_bagit_metadata_type().id
-        ).one_or_none()
+        sm = (
+            db.session.query(SIPMetadata)
+            .filter_by(sip_id=sip.id, type_id=cls._get_bagit_metadata_type().id)
+            .one_or_none()
+        )
         if sm and as_dict:
             return json.loads(sm.content)
         else:
@@ -332,7 +334,7 @@ class BagItArchiver(BaseArchiver):
         bagit_type = self._get_bagit_metadata_type()
         content = json.dumps(bagit_metadata)
         with db.session.begin_nested():
-            obj = SIPMetadata.query.get((self.sip.id, bagit_type.id))
+            obj = db.session.get(SIPMetadata, (self.sip.id, bagit_type.id))
             if obj:
                 if overwrite:
                     obj.content = content

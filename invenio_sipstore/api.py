@@ -178,7 +178,7 @@ class SIP:
     @classmethod
     def get_sip(cls, uuid):
         """Get a SIP API object from the UUID if a model object."""
-        return cls(SIP_.query.filter_by(id=uuid).one())
+        return cls(db.session.query(SIP_).get(uuid))
 
 
 class RecordSIP:

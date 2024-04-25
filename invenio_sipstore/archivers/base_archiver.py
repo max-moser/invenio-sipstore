@@ -17,6 +17,7 @@ import os
 from hashlib import md5
 from io import BytesIO
 
+from invenio_db import db
 from invenio_files_rest.models import FileInstance
 
 from .. import current_sipstore
@@ -297,7 +298,7 @@ class BaseArchiver:
         if sipfile:
             fi = sipfile.file
         else:
-            fi = FileInstance.query.get(fileinfo["file_uuid"])
+            fi = db.session.get(FileInstance, fileinfo["file_uuid"])
         sf = self.storage_factory(
             fileurl=fileinfo["fullpath"], size=fileinfo["size"], modified=fi.updated
         )
@@ -327,7 +328,9 @@ class BaseArchiver:
         if not fileinfo:
             fileinfo = self._generate_sipmetadata_info(sipmetadata)
         if not sipmetadata:
-            sipmetadata = SIPMetadata.query.get((self.sip.id, fileinfo["metadata_id"]))
+            sipmetadata = db.session.get(
+                SIPMetadata, (self.sip.id, fileinfo["metadata_id"])
+            )
         sf = self.storage_factory(
             fileurl=fileinfo["fullpath"],
             size=fileinfo["size"],

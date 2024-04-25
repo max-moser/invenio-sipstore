@@ -73,7 +73,7 @@ class SIP(db.Model, Timestamp):
         :param bool archivable: Tells if the SIP should be archived or not.
         :param bool archived: Tells if the SIP has been archived.
         """
-        if user_id and (User.query.get(user_id) is None):
+        if user_id and (db.session.get(User, user_id) is None):
             raise SIPUserDoesNotExist(user_id)
 
         agent = agent or dict()
@@ -194,17 +194,17 @@ class SIPMetadataType(db.Model):
     @classmethod
     def get(cls, id):
         """Return the corresponding SIPMetadataType."""
-        return cls.query.filter_by(id=id).one()
+        return db.session.query(cls).filter_by(id=id).one()
 
     @classmethod
     def get_from_name(cls, name):
         """Return the corresponding SIPMetadataType."""
-        return cls.query.filter_by(name=name).one()
+        return db.session.query(cls).filter_by(name=name).one()
 
     @classmethod
     def get_from_schema(cls, schema):
         """Return the corresponding SIPMetadataType."""
-        return cls.query.filter_by(schema=schema).one()
+        return db.session.query(cls).filter_by(schema=schema).one()
 
 
 class SIPMetadata(db.Model, Timestamp):
@@ -270,4 +270,4 @@ class RecordSIP(db.Model, Timestamp):
     @classmethod
     def get_by_sip(cls, sip_id):
         """Return the corresponding PIDs from SIP."""
-        return cls.query.filter_by(sip_id=sip_id).all()
+        return db.session.query(cls).filter_by(sip_id=sip_id).all()

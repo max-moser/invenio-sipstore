@@ -9,6 +9,7 @@
 
 """Submission Information Package store for Invenio."""
 
+from invenio_db import db
 from invenio_files_rest.models import Location
 from werkzeug.utils import cached_property
 
@@ -36,7 +37,7 @@ class _InvenioSIPStoreState:
         :return: URI to the archive root.
         """
         name = self.app.config["SIPSTORE_ARCHIVER_LOCATION_NAME"]
-        return Location.query.filter_by(name=name).one().uri
+        return db.session.query(Location).filter_by(name=name).one().uri
 
     @cached_property
     def archive_path_builder(self):
