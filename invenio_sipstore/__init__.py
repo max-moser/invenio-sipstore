@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function
 
 from .ext import InvenioSIPStore
 from .proxies import current_sipstore
-from .version import __version__
+
+__version__ = "1.0.0a7"
 
 __all__ = ("__version__", "current_sipstore", "InvenioSIPStore")
