@@ -20,4 +20,4 @@ class SIPUserDoesNotExist(SIPError):
     def __init__(self, user_id, *args, **kwargs):
         """Initialize exception."""
         self.user_id = user_id
-        super(SIPUserDoesNotExist, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

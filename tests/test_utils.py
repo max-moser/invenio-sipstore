@@ -50,7 +50,7 @@ def test_default_archive_directory_builder(app, db):
 def test_secure_sipfilename_formatter(app, db):
     """Test some potentially dangerous or incompatible SIPFile filepaths."""
 
-    class MockSIPFile(object):
+    class MockSIPFile:
         def __init__(self, file_id, filepath):
             self.file_id = file_id
             self.filepath = filepath

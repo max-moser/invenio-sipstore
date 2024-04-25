@@ -13,6 +13,7 @@
 import os
 import shutil
 import tempfile
+from io import BytesIO
 
 import pytest
 from flask import Flask
@@ -26,7 +27,6 @@ from invenio_i18n import InvenioI18N
 from invenio_jsonschemas import InvenioJSONSchemas
 from invenio_records import InvenioRecords
 from invenio_search import InvenioSearch
-from six import BytesIO, b
 from sqlalchemy_utils.functions import create_database, database_exists, drop_database
 
 from invenio_sipstore import InvenioSIPStore
@@ -151,7 +151,9 @@ def sips(db, locations, sip_metadata_types):
     # (see conftest configuration)
     sip1api.attach_metadata("txt-test", "Title: TXT 1")
     file1 = FileInstance.create()
-    file1.set_contents(BytesIO(b("test")), default_location=locations["default"].uri)
+    file1.set_contents(
+        BytesIO(("test".encode())), default_location=locations["default"].uri
+    )
     sip1file1 = SIPFile(sip_id=sip1.id, filepath="foobar.txt", file_id=file1.id)
 
     db_.session.add(sip1file1)
@@ -162,7 +164,7 @@ def sips(db, locations, sip_metadata_types):
     sip2api.attach_metadata("json-test", '{"title": "JSON 2"}')
     file2 = FileInstance.create()
     file2.set_contents(
-        BytesIO(b"test-second"), default_location=locations["default"].uri
+        BytesIO("test-second".encode()), default_location=locations["default"].uri
     )
     sip2file1 = SIPFile(sip_id=sip2.id, filepath="foobar.txt", file_id=file1.id)
     sip2file2 = SIPFile(sip_id=sip2.id, filepath="foobar2.txt", file_id=file2.id)
@@ -176,7 +178,7 @@ def sips(db, locations, sip_metadata_types):
     sip3api.attach_metadata("json-test", '{"title": "JSON 3"}')
     file3 = FileInstance.create()
     file3.set_contents(
-        BytesIO(b"test-third"), default_location=locations["default"].uri
+        BytesIO("test-third".encode()), default_location=locations["default"].uri
     )
     sip3file2 = SIPFile(
         sip_id=sip3.id, filepath="foobar2-renamed.txt", file_id=file2.id

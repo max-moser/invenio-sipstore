@@ -16,7 +16,7 @@ from . import config
 from .utils import load_or_import_from_config
 
 
-class _InvenioSIPStoreState(object):
+class _InvenioSIPStoreState:
     """Invenio SIPStore state."""
 
     def __init__(self, app):
@@ -57,7 +57,7 @@ class _InvenioSIPStoreState(object):
         )
 
 
-class InvenioSIPStore(object):
+class InvenioSIPStore:
     """Invenio-SIPStore extension."""
 
     def __init__(self, app=None):

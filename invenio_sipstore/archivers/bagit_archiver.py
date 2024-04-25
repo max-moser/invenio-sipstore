@@ -15,7 +15,6 @@ from datetime import datetime
 from flask import current_app
 from invenio_db import db
 from jsonschema import validate
-from six import string_types
 from werkzeug.utils import import_string
 
 from ..api import SIP
@@ -104,7 +103,7 @@ class BagItArchiver(BaseArchiver):
             which contains all of SIPFile mappings. If this parameter is
             boolean-resolvable as False, the file will not be created.
         """
-        super(BagItArchiver, self).__init__(
+        super().__init__(
             sip,
             data_dir=data_dir,
             metadata_dir=metadata_dir,
@@ -206,7 +205,7 @@ class BagItArchiver(BaseArchiver):
         return [
             ("X-Agent-{0}".format(_convert_key(k)), v)
             for k, v in sorted(agent.items())
-            if isinstance(v, string_types) and k not in exclude
+            if isinstance(v, str) and k not in exclude
         ]
 
     def get_baginfo_file(self, filesinfo):
@@ -357,7 +356,7 @@ class BagItArchiver(BaseArchiver):
             bagit_meta = self.get_bagit_metadata(self.sip, as_dict=True)
 
         write_filesinfo = [fi for fi in bagit_meta["files"] if not self._is_fetched(fi)]
-        return super(BagItArchiver, self).write_all_files(filesinfo=write_filesinfo)
+        return super().write_all_files(filesinfo=write_filesinfo)
 
     @staticmethod
     def _get_checksum(checksum, expected="md5"):

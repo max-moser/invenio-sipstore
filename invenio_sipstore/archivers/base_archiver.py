@@ -15,9 +15,9 @@ to worry about e.g. files to disk.
 
 import os
 from hashlib import md5
+from io import BytesIO
 
 from invenio_files_rest.models import FileInstance
-from six import BytesIO
 
 from .. import current_sipstore
 from ..api import SIP
@@ -25,7 +25,7 @@ from ..models import SIPMetadata
 from ..signals import sipstore_archiver_status
 
 
-class BaseArchiver(object):
+class BaseArchiver:
     """Base archiver.
 
     The archiving is done in two steps:

@@ -13,6 +13,7 @@
 import json
 import tempfile
 import uuid
+from io import BytesIO
 from shutil import rmtree
 
 from invenio_accounts.testutils import create_test_user
@@ -20,7 +21,6 @@ from invenio_files_rest.models import Bucket, Location, ObjectVersion
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_records_files.api import Record
 from invenio_records_files.models import RecordsBuckets
-from six import BytesIO
 
 from invenio_sipstore.api import SIP, RecordSIP
 from invenio_sipstore.models import SIP as SIP_

@@ -22,7 +22,7 @@ from invenio_sipstore.models import SIPFile, SIPMetadata, SIPMetadataType
 from invenio_sipstore.signals import sipstore_created
 
 
-class SIP(object):
+class SIP:
     """API for managing SIPs."""
 
     def __init__(self, sip):
@@ -181,7 +181,7 @@ class SIP(object):
         return cls(SIP_.query.filter_by(id=uuid).one())
 
 
-class RecordSIP(object):
+class RecordSIP:
     """API for managing SIPRecords."""
 
     def __init__(self, recordsip, sip):
