@@ -35,7 +35,7 @@ from invenio_sipstore.archivers.bagit_archiver import BagItArchiver
 from invenio_sipstore.models import SIP, SIPFile, SIPMetadataType
 
 
-@pytest.yield_fixture(scope="session")
+@pytest.fixture(scope="session")
 def instance_path():
     """Default instance path."""
     path = tempfile.mkdtemp()
@@ -61,7 +61,7 @@ def base_app(instance_path):
     return app
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def app(base_app):
     """Flask application fixture."""
     InvenioDB(base_app)
@@ -75,7 +75,7 @@ def app(base_app):
         yield base_app
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def db(app):
     """Setup database."""
     if not database_exists(str(db_.engine.url)):
@@ -230,7 +230,7 @@ def sips(db, locations, sip_metadata_types):
     return [sip1api, sip2api, sip3api, sip4api, sip5api]
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def archive_fs(locations):
     """Fixture to check the BagIt file generation."""
     archive_path = locations["archive"].uri
@@ -240,7 +240,7 @@ def archive_fs(locations):
         fs.removetree(d)
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def secure_sipfile_name_formatter(app):
     """Temporarily change the default name formatter for SIPFiles."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"]
@@ -251,7 +251,7 @@ def secure_sipfile_name_formatter(app):
     app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = fmt
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def custom_sipmetadata_name_formatter(app):
     """Temporarily change the default name formatter for SIPMetadata files."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"]
