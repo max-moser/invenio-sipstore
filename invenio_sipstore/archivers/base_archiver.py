@@ -12,12 +12,9 @@ The base archiver implements a basic API that allows subclasses to not having
 to worry about e.g. files to disk.
 """
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 import os
 from hashlib import md5
 
-from flask import current_app
 from invenio_files_rest.models import FileInstance
 from six import BytesIO
 

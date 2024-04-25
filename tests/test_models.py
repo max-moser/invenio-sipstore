@@ -9,8 +9,6 @@
 
 """Module tests."""
 
-from __future__ import absolute_import, print_function
-
 import pytest
 from invenio_accounts.testutils import create_test_user
 from invenio_jsonschemas.errors import JSONSchemaNotFound

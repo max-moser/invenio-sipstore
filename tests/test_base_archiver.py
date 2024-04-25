@@ -8,8 +8,6 @@
 
 """Module tests for the BaseArchiver class."""
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 from hashlib import md5
 
 from invenio_sipstore.archivers.base_archiver import BaseArchiver

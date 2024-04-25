@@ -9,8 +9,6 @@
 
 """Pytest helpers."""
 
-from __future__ import absolute_import, print_function
-
 
 def get_file(filename, result):
     """Get a file by its filename from the results list."""

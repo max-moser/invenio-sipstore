@@ -9,8 +9,6 @@
 
 """Module tests."""
 
-from __future__ import absolute_import, print_function
-
 import json
 import tempfile
 import uuid
@@ -116,7 +114,9 @@ def test_SIP_build_agent_info(app, mocker):
         mock_request = mocker.patch("invenio_sipstore.api.request")
         type(mock_request).remote_addr = mocker.PropertyMock(return_value="localhost")
         mock_current_user = mocker.patch("invenio_sipstore.api.current_user")
-        type(mock_current_user).is_authenticated = mocker.PropertyMock(return_value=True)
+        type(mock_current_user).is_authenticated = mocker.PropertyMock(
+            return_value=True
+        )
         type(mock_current_user).email = mocker.PropertyMock(
             return_value="test@invenioso.org"
         )

@@ -8,8 +8,6 @@
 
 """Module tests for the BagItArchiver class."""
 
-from __future__ import absolute_import, print_function
-
 from datetime import datetime
 from hashlib import md5
 

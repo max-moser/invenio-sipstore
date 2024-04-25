@@ -8,8 +8,6 @@
 
 """Errors for Submission Information Packages."""
 
-from __future__ import absolute_import, print_function
-
 
 class SIPError(Exception):
     """Base class for SIPStore errors."""

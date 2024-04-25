@@ -7,9 +7,6 @@
 # under the terms of the MIT License; see LICENSE file for more details.
 """Admin interface tests."""
 
-from __future__ import absolute_import, print_function
-
-import pytest
 from flask_admin import Admin, menu
 
 from invenio_sipstore.admin import (

@@ -8,8 +8,6 @@
 
 """Module tests for the BagItArchiver class."""
 
-from __future__ import absolute_import, print_function, unicode_literals
-
 from uuid import UUID
 
 from invenio_sipstore.archivers.utils import chunks, default_archive_directory_builder

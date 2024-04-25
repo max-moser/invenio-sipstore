@@ -8,8 +8,6 @@
 
 """Utilities for SIPStore archivers."""
 
-from __future__ import absolute_import, print_function
-
 from werkzeug.utils import secure_filename
 
 

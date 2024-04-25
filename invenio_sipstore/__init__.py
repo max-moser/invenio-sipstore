@@ -8,8 +8,6 @@
 
 """Submission Information Package store for Invenio."""
 
-from __future__ import absolute_import, print_function
-
 from .ext import InvenioSIPStore
 from .proxies import current_sipstore
 

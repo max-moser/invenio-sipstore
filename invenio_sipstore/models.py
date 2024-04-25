@@ -8,8 +8,6 @@
 
 """Invenio-SIPStore database models."""
 
-from __future__ import absolute_import, print_function
-
 import uuid
 
 from flask import current_app
