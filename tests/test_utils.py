@@ -74,4 +74,4 @@ def test_secure_sipfilename_formatter(app, db):
         ("Name with spaces.txt", "Name_with_spaces.txt"),
     ]
     for orig, secure in examples:
-        assert fmt(MockSIPFile(sip_id, orig)) == "{0}-{1}".format(sip_id, secure)
+        assert fmt(MockSIPFile(sip_id, orig)) == f"{sip_id}-{secure}"

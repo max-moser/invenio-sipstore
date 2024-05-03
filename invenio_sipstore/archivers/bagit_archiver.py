@@ -159,15 +159,13 @@ class BagItArchiver(BaseArchiver):
     def get_fetch_file(self, filesinfo):
         """Generate the contents of the fetch.txt file."""
         content = "\n".join(
-            "{0} {1} {2}".format(f["fullpath"], f["size"], f["filepath"])
-            for f in filesinfo
+            f"{f['fullpath']} {f['size']} {f['filepath']}" for f in filesinfo
         )
         return self._generate_extra_info(content, "fetch.txt")
 
     def _generate_md5manifest_content(self, filesinfo):
         content = "\n".join(
-            "{0} {1}".format(self._get_checksum(f["checksum"]), f["filepath"])
-            for f in filesinfo
+            f"{self._get_checksum(f['checksum'])} {f['filepath']}" for f in filesinfo
         )
         return content
 
@@ -181,7 +179,7 @@ class BagItArchiver(BaseArchiver):
         return self._generate_extra_info(content, "manifest-md5.txt")
 
     def _generate_payload_oxum(self, filesinfo):
-        return "{0}.{1}".format(sum([f["size"] for f in filesinfo]), len(filesinfo))
+        return f"{sum([f['size'] for f in filesinfo])}.{len(filesinfo)}"
 
     def _generate_bagging_date(self):
         """Generate the bagging date timestamp."""
@@ -205,7 +203,7 @@ class BagItArchiver(BaseArchiver):
         exclude = ["$schema"]
 
         return [
-            ("X-Agent-{0}".format(_convert_key(k)), v)
+            (f"X-Agent-{_convert_key(k)}", v)
             for k, v in sorted(agent.items())
             if isinstance(v, str) and k not in exclude
         ]
@@ -220,8 +218,8 @@ class BagItArchiver(BaseArchiver):
             elif t_name == "Bagging-Date":
                 t_value = self._generate_bagging_date()
             elif t_name == "External-Identifier" and t_value is None:
-                t_value = "{0}/{1}".format(self.sip.id, self.archiver_version)
-            content.append("{0}: {1}".format(t_name, t_value))
+                t_value = f"{self.sip.id}/{self.archiver_version}"
+            content.append(f"{t_name}: {t_value}")
 
         # Include agent tags
         if self.sip.agent:
@@ -231,7 +229,7 @@ class BagItArchiver(BaseArchiver):
             agent_tags = agent_tags_factory(self.sip.agent)
 
             for k, v in agent_tags:
-                content.append("{0}: {1}".format(k, v))
+                content.append(f"{k}: {v}")
 
         content = "\n".join(content)
         return self._generate_extra_info(content, "bag-info.txt")

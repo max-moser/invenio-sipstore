@@ -257,7 +257,7 @@ def custom_sipmetadata_name_formatter(app):
     fmt = app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"]
 
     app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = (
-        lambda sm: "{0}-metadata.{1}".format(sm.type.name, sm.type.format)
+        lambda sm: f"{sm.type.name}-metadata.{sm.type.format}"
     )
     yield
     app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = fmt

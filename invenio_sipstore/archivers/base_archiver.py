@@ -179,9 +179,7 @@ class BaseArchiver:
         filename = current_sipstore.sipmetadata_name_formatter(sipmetadata)
         filepath = os.path.join(self.metadata_dir, filename)
         return dict(
-            checksum="md5:{}".format(
-                str(md5(sipmetadata.content.encode("utf-8")).hexdigest())
-            ),
+            checksum=f"md5:{md5(sipmetadata.content.encode('utf-8')).hexdigest()}",
             size=len(sipmetadata.content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),
@@ -192,7 +190,7 @@ class BaseArchiver:
         """Generate the file information dictionary from a raw content."""
         filepath = os.path.join(self.extra_dir, filename)
         return dict(
-            checksum="md5:{}".format(str(md5(content.encode("utf-8")).hexdigest())),
+            checksum=f"md5:{md5(content.encode('utf-8')).hexdigest()}",
             size=len(content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),
@@ -215,9 +213,7 @@ class BaseArchiver:
         See ``default_sipfile_name_formatter()`` and
         ``secure_sipfile_name_formatter()``.
         """
-        content = "\n".join(
-            "{0} {1}".format(f["filename"], f["sipfilepath"]) for f in filesinfo
-        )
+        content = "\n".join(f"{f['filename']} {f['sipfilepath']}" for f in filesinfo)
         return self._generate_extra_info(content, self.filenames_mapping_file)
 
     def _get_data_files(self):
@@ -370,10 +366,8 @@ class BaseArchiver:
         keys = ["file_uuid", "metadata_id", "content"]
         if not all(any(k in fi for k in keys) for fi in filesinfo):
             raise ValueError(
-                "Missing one of mandatory keys ({keys}) in one or more "
-                "file-information entries: {filesinfo}".format(
-                    keys=keys, filesinfo=filesinfo
-                )
+                f"Missing one of mandatory keys ({keys}) in one or more "
+                f"file-information entries: {filesinfo}"
             )
         total_size = sum(fi["size"] for fi in filesinfo)
         copied_size = 0

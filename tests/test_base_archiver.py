@@ -24,10 +24,8 @@ def test_getters(db, sips, sip_metadata_types, locations):
     data_files_info = archiver._get_data_files()
     sip_id = str(sip.id)
     abs_path_fmt = (
-        "{root}/{c1}/{c2}/{cn}/".format(
-            root=locations["archive"].uri, c1=sip_id[:2], c2=sip_id[2:4], cn=sip_id[4:]
-        )
-        + "{filepath}"
+        f"{locations['archive'].uri}/{sip_id[:2]}/{sip_id[2:4]}/{sip_id[4:]}/"
+        "{filepath}"
     )
     abs_path = abs_path_fmt.format(filepath="files/foobar.txt")
     fi = {
@@ -172,20 +170,20 @@ def test_name_formatters(
     expected = [
         ("metadata/marcxml-test-metadata.xml", "<p>XML 4 żółć</p>"),
         ("metadata/json-test-metadata.json", '{"title": "JSON 4 żółć"}'),
-        ("files/{0}-foobar.txt".format(uuid1), "test-fourth żółć"),
+        (f"files/{uuid1}-foobar.txt", "test-fourth żółć"),
         (
-            "files/{0}-http_maliciouswebsite.com_hack.js".format(uuid2),
+            f"files/{uuid2}-http_maliciouswebsite.com_hack.js",
             "test-fifth ąęćźə",
         ),
-        ("files/{0}-ozzcae.dat".format(uuid3), "test-sixth π"),
+        (f"files/{uuid3}-ozzcae.dat", "test-sixth π"),
         (
             "files/filenames.txt",
             set(
                 [
-                    "{0}-foobar.txt ../../foobar.txt".format(uuid1),
-                    "{0}-http_maliciouswebsite.com_hack.js "
-                    "http://maliciouswebsite.com/hack.js".format(uuid2),
-                    "{0}-ozzcae.dat łóżźćąę.dat".format(uuid3),
+                    f"{uuid1}-foobar.txt ../../foobar.txt",
+                    f"{uuid2}-http_maliciouswebsite.com_hack.js "
+                    "http://maliciouswebsite.com/hack.js",
+                    f"{uuid3}-ozzcae.dat łóżźćąę.dat",
                 ]
             ),
         ),

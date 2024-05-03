@@ -64,9 +64,7 @@ def default_archive_directory_builder(sip):
 
 def default_sipmetadata_name_formatter(sipmetadata):
     """Default generator for the SIPMetadata filenames."""
-    return "{name}.{format}".format(
-        name=sipmetadata.type.name, format=sipmetadata.type.format
-    )
+    return f"{sipmetadata.type.name}.{sipmetadata.type.format}"
 
 
 def default_sipfile_name_formatter(sipfile):
@@ -96,6 +94,4 @@ def secure_sipfile_name_formatter(sipfile):
     For more information on the ``secure_filename`` function visit:
     ``http://werkzeug.pocoo.org/docs/utils/#werkzeug.utils.secure_filename``
     """
-    return "{uuid}-{name}".format(
-        uuid=str(sipfile.file_id), name=secure_filename(sipfile.filepath)
-    )
+    return f"{sipfile.file_id}-{secure_filename(sipfile.filepath)}"

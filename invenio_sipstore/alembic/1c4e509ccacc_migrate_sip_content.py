@@ -133,7 +133,7 @@ def upgrade():
         total_rows_migrated = 0
         while conn.execute(insert_to_sip_metadata).rowcount and chunk_size:
             total_rows_migrated += chunk_size
-            print("{} rows migrated".format(total_rows_migrated))
+            print(f"{total_rows_migrated} rows migrated")
 
     # Add the NOT NULL constraint
     op.alter_column("sipstore_sip", "archivable", nullable=False)

@@ -162,24 +162,20 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
     assert len(fs5.listdir("data/metadata")) == 1
 
     # Fetch the filenames for easier fixture formatting below
-    file1_fn = "{0}-foobar.txt".format(
-        fetch_file_endswith(sips[0], "foobar.txt").file_id
-    )
-    file2_fn = "{0}-foobar2.txt".format(
-        fetch_file_endswith(sips[1], "foobar2.txt").file_id
-    )
-    file3_fn = "{0}-foobar3.txt".format(
-        fetch_file_endswith(sips[2], "foobar3.txt").file_id
-    )
-    file2_rn_fn = "{0}-foobar2-renamed.txt".format(
-        fetch_file_endswith(sips[2], "foobar2-renamed.txt").file_id
-    )
+    file1_fn = f"{fetch_file_endswith(sips[0], 'foobar.txt').file_id}-foobar.txt"
+    file2_fn = f"{fetch_file_endswith(sips[1], 'foobar2.txt').file_id}-foobar2.txt"
+    file3_fn = f"{fetch_file_endswith(sips[2], 'foobar3.txt').file_id}-foobar3.txt"
+    file2_rn_fn = f"{fetch_file_endswith(sips[2], 'foobar2-renamed.txt').file_id}-foobar2-renamed.txt"  # noqa
+
+    f1_dp = f"data/files/{file1_fn}"
+    f2_dp = f"data/files/{file2_fn}"
+    f3_dp = f"data/files/{file3_fn}"
 
     assert file2_fn[:36] == file2_rn_fn[:36]
     # Both file2_fn and file2_rn_fn are referring to the same FileInstance,
     # so their UUID prefix should match
     expected_sip1 = [
-        ("data/files/{0}".format(file1_fn), "test"),
+        (f"data/files/{file1_fn}", "test"),
         ("data/metadata/marcxml-test.xml", "<p>XML 1</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 1"}'),
         ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
@@ -188,7 +184,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             set(
                 [
                     "{checksum} {filepath}".format(
-                        **_read_file(fs1, "data/files/{0}".format(file1_fn))
+                        **_read_file(fs1, f"data/files/{file1_fn}")
                     ),
                     "{checksum} {filepath}".format(
                         **_read_file(fs1, "data/metadata/marcxml-test.xml")
@@ -207,19 +203,15 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
         ),
         (
             "data/filenames.txt",
-            set(
-                [
-                    "{0} foobar.txt".format(file1_fn),
-                ]
-            ),
+            set([f"{file1_fn} foobar.txt"]),
         ),
         (
             "bag-info.txt",
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                "Bagging-Date: {0}\n".format(dt) + "Payload-Oxum: 105.5\n"
-                "External-Identifier: {0}/SIPBagIt-v1.0.0\n".format(sips[0].id)
+                f"Bagging-Date: {dt}\nPayload-Oxum: 105.5\n"
+                f"External-Identifier: {sips[0].id}/SIPBagIt-v1.0.0\n"
                 + "External-Description: BagIt archive of SIP.\n"
                 "X-Agent-Email: spiderpig@invenio.org\n"
                 "X-Agent-Ip-Address: 1.1.1.1\n"
@@ -227,33 +219,19 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             ),
         ),
     ]
+
     expected_sip2 = [
-        ("data/files/{0}".format(file2_fn), "test-second"),
+        (f"data/files/{file2_fn}", "test-second"),
         ("data/metadata/marcxml-test.xml", "<p>XML 2</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 2"}'),
         ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
-        (
-            "fetch.txt",
-            set(
-                [
-                    "{0} {1} {2}".format(
-                        fs1.getsyspath("data/files/{0}".format(file1_fn)),
-                        4,
-                        "data/files/{0}".format(file1_fn),
-                    ),
-                ]
-            ),
-        ),
+        ("fetch.txt", set([f"{fs1.getsyspath(f1_dp)} 4 {f1_dp}"])),
         (
             "manifest-md5.txt",
             set(
                 [
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs1, "data/files/{0}".format(file1_fn))
-                    ),
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs2, "data/files/{0}".format(file2_fn))
-                    ),
+                    "{checksum} {filepath}".format(**_read_file(fs1, f1_dp)),
+                    "{checksum} {filepath}".format(**_read_file(fs2, f2_dp)),
                     "{checksum} {filepath}".format(
                         **_read_file(fs2, "data/metadata/marcxml-test.xml")
                     ),
@@ -270,8 +248,8 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "data/filenames.txt",
             set(
                 [
-                    "{0} foobar.txt".format(file1_fn),
-                    "{0} foobar2.txt".format(file2_fn),
+                    f"{file1_fn} foobar.txt",
+                    f"{file2_fn} foobar2.txt",
                 ]
             ),
         ),
@@ -280,14 +258,15 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                "Bagging-Date: {0}\n".format(dt) + "Payload-Oxum: 165.5\n"
-                "External-Identifier: {0}/SIPBagIt-v1.0.0\n".format(sips[1].id)
+                f"Bagging-Date: {dt}\nPayload-Oxum: 165.5\n"
+                f"External-Identifier: {sips[1].id}/SIPBagIt-v1.0.0\n"
                 + "External-Description: BagIt archive of SIP."
             ),
         ),
     ]
+
     expected_sip3 = [
-        ("data/files/{0}".format(file3_fn), "test-third"),
+        (f"data/files/{file3_fn}", "test-third"),
         ("data/metadata/marcxml-test.xml", "<p>XML 3</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 3"}'),
         ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
@@ -295,20 +274,12 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "fetch.txt",
             set(
                 [
-                    "{0} {1} {2}".format(
-                        fs1.getsyspath("data/files/{0}".format(file1_fn)),
-                        4,
-                        "data/files/{0}".format(file1_fn),
-                    ),
+                    f"{fs1.getsyspath(f1_dp)} 4 {f1_dp}",
                     # Explanation on entry below: The file is fetched using original
                     # filename (file2_fn) as it will be archived in SIP-2, however
                     # the new destination has the 'renamed' filename (file2_rn_fn).
                     # This is correct and expected behaviour
-                    "{0} {1} {2}".format(
-                        fs2.getsyspath("data/files/{0}".format(file2_fn)),
-                        11,
-                        "data/files/{0}".format(file2_rn_fn),
-                    ),
+                    f"{fs2.getsyspath(f2_dp)} 11 data/files/{file2_rn_fn}",
                 ]
             ),
         ),
@@ -316,17 +287,12 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "manifest-md5.txt",
             set(
                 [
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs1, "data/files/{0}".format(file1_fn))
-                    ),
+                    "{checksum} {filepath}".format(**_read_file(fs1, f1_dp)),
                     # Manifest also specifies the renamed filename for File-2
                     "{checksum} data/files/{newfilename}".format(
-                        newfilename=file2_rn_fn,
-                        **_read_file(fs2, "data/files/{0}".format(file2_fn))
+                        newfilename=file2_rn_fn, **_read_file(fs2, f2_dp)
                     ),
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs3, "data/files/{0}".format(file3_fn))
-                    ),
+                    "{checksum} {filepath}".format(**_read_file(fs3, f3_dp)),
                     "{checksum} {filepath}".format(
                         **_read_file(fs3, "data/metadata/marcxml-test.xml")
                     ),
@@ -343,9 +309,9 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "data/filenames.txt",
             set(
                 [
-                    "{0} foobar.txt".format(file1_fn),
-                    "{0} foobar2.txt".format(file2_fn),
-                    "{0} foobar3.txt".format(file3_fn),
+                    f"{file1_fn} foobar.txt",
+                    f"{file2_fn} foobar2.txt",
+                    f"{file3_fn} foobar3.txt",
                 ]
             ),
         ),
@@ -354,8 +320,8 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                "Bagging-Date: {0}\n".format(dt) + "Payload-Oxum: 236.6\n"
-                "External-Identifier: {0}/SIPBagIt-v1.0.0\n".format(sips[2].id)
+                f"Bagging-Date: {dt}\nPayload-Oxum: 236.6\n"
+                f"External-Identifier: {sips[2].id}/SIPBagIt-v1.0.0\n"
                 + "External-Description: BagIt archive of SIP."
             ),
         ),
@@ -368,25 +334,13 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "fetch.txt",
             set(
                 [
-                    "{0} {1} {2}".format(
-                        fs1.getsyspath("data/files/{0}".format(file1_fn)),
-                        4,
-                        "data/files/{0}".format(file1_fn),
-                    ),
+                    f"{fs1.getsyspath(f1_dp)} 4 {f1_dp}",
                     # As in "expected_sip3" above, the file is fetched using original
                     # filename (file2_fn) as it will be archived in SIP-2, however
                     # the new destination has the 'renamed' filename (file2_rn_fn).
                     # This is correct and expected behaviour
-                    "{0} {1} {2}".format(
-                        fs2.getsyspath("data/files/{0}".format(file2_fn)),
-                        11,
-                        "data/files/{0}".format(file2_rn_fn),
-                    ),
-                    "{0} {1} {2}".format(
-                        fs3.getsyspath("data/files/{0}".format(file3_fn)),
-                        10,
-                        "data/files/{0}".format(file3_fn),
-                    ),
+                    f"{fs2.getsyspath(f2_dp)} 11 {f'data/files/{file2_rn_fn}'}",
+                    f"{fs3.getsyspath(f3_dp)} 10 {f3_dp}",
                 ]
             ),
         ),
@@ -394,17 +348,12 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "manifest-md5.txt",
             set(
                 [
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs1, "data/files/{0}".format(file1_fn))
-                    ),
+                    "{checksum} {filepath}".format(**_read_file(fs1, f1_dp)),
                     # Manifest also specifies the renamed filename for File-2
                     "{checksum} data/files/{newfilename}".format(
-                        newfilename=file2_rn_fn,
-                        **_read_file(fs2, "data/files/{0}".format(file2_fn))
+                        newfilename=file2_rn_fn, **_read_file(fs2, f2_dp)
                     ),
-                    "{checksum} {filepath}".format(
-                        **_read_file(fs3, "data/files/{0}".format(file3_fn))
-                    ),
+                    "{checksum} {filepath}".format(**_read_file(fs3, f3_dp)),
                     "{checksum} {filepath}".format(
                         **_read_file(fs5, "data/metadata/marcxml-test.xml")
                     ),
@@ -418,9 +367,9 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             "data/filenames.txt",
             set(
                 [
-                    "{0} foobar.txt".format(file1_fn),
-                    "{0} foobar2.txt".format(file2_fn),
-                    "{0} foobar3.txt".format(file3_fn),
+                    f"{file1_fn} foobar.txt",
+                    f"{file2_fn} foobar2.txt",
+                    f"{file3_fn} foobar3.txt",
                 ]
             ),
         ),
@@ -429,8 +378,8 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                "Bagging-Date: {0}\n".format(dt) + "Payload-Oxum: 227.5\n"
-                "External-Identifier: {0}/SIPBagIt-v1.0.0\n".format(sips[4].id)
+                f"Bagging-Date: {dt}\nPayload-Oxum: 227.5\n"
+                f"External-Identifier: {sips[4].id}/SIPBagIt-v1.0.0\n"
                 + "External-Description: BagIt archive of SIP."
             ),
         ),

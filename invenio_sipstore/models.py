@@ -151,7 +151,7 @@ class SIPFile(db.Model, Timestamp):
     def validate_key(self, filepath, filepath_):
         """Validate key."""
         if len(filepath_) > current_app.config["SIPSTORE_FILEPATH_MAX_LEN"]:
-            raise ValueError("Filepath too long ({0}).".format(len(filepath_)))
+            raise ValueError(f"Filepath too long ({len(filepath_)}).")
         return filepath_
 
     #
