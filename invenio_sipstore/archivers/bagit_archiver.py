@@ -25,8 +25,8 @@ from ..models import SIPMetadata, SIPMetadataType, current_jsonschemas
 class BagItArchiver(BaseArchiver):
     """BagIt archiver for SIPs.
 
-    Archives the SIP in the BagIt archive format (v0.97). For more information
-    on the BagIt standard visit: https://tools.ietf.org/html/draft-kunze-bagit
+    Archives the SIP in the BagIt archive format (v1.0). For more information
+    on the BagIt standard visit: https://datatracker.ietf.org/doc/html/rfc8493
     """
 
     bagit_metadata_type_name = "bagit"
@@ -153,19 +153,19 @@ class BagItArchiver(BaseArchiver):
         :return: File information dictionary
         :rtype: dict
         """
-        content = "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"
+        content = "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"
         return self._generate_extra_info(content, "bagit.txt")
 
     def get_fetch_file(self, filesinfo):
         """Generate the contents of the fetch.txt file."""
-        content = "\n".join(
-            f"{f['fullpath']} {f['size']} {f['filepath']}" for f in filesinfo
+        content = "".join(
+            f"{f['fullpath']} {f['size']} {f['filepath']}\n" for f in filesinfo
         )
         return self._generate_extra_info(content, "fetch.txt")
 
     def _generate_md5manifest_content(self, filesinfo):
-        content = "\n".join(
-            f"{self._get_checksum(f['checksum'])} {f['filepath']}" for f in filesinfo
+        content = "".join(
+            f"{self._get_checksum(f['checksum'])} {f['filepath']}\n" for f in filesinfo
         )
         return content
 
@@ -219,7 +219,7 @@ class BagItArchiver(BaseArchiver):
                 t_value = self._generate_bagging_date()
             elif t_name == "External-Identifier" and t_value is None:
                 t_value = f"{self.sip.id}/{self.archiver_version}"
-            content.append(f"{t_name}: {t_value}")
+            content.append(f"{t_name}: {t_value}\n")
 
         # Include agent tags
         if self.sip.agent:
@@ -229,9 +229,9 @@ class BagItArchiver(BaseArchiver):
             agent_tags = agent_tags_factory(self.sip.agent)
 
             for k, v in agent_tags:
-                content.append(f"{k}: {v}")
+                content.append(f"{k}: {v}\n")
 
-        content = "\n".join(content)
+        content = "".join(content)
         return self._generate_extra_info(content, "bag-info.txt")
 
     def get_tagmanifest_file(self, filesinfo):

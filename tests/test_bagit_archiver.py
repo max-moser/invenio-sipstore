@@ -178,7 +178,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
         (f"data/files/{file1_fn}", "test"),
         ("data/metadata/marcxml-test.xml", "<p>XML 1</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 1"}'),
-        ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
+        ("bagit.txt", "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"),
         (
             "manifest-md5.txt",
             set(
@@ -212,10 +212,10 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
                 f"Bagging-Date: {dt}\nPayload-Oxum: 105.5\n"
                 f"External-Identifier: {sips[0].id}/SIPBagIt-v1.0.0\n"
-                + "External-Description: BagIt archive of SIP.\n"
+                "External-Description: BagIt archive of SIP.\n"
                 "X-Agent-Email: spiderpig@invenio.org\n"
                 "X-Agent-Ip-Address: 1.1.1.1\n"
-                "X-Agent-Orcid: 1111-1111-1111-1111"
+                "X-Agent-Orcid: 1111-1111-1111-1111\n"
             ),
         ),
     ]
@@ -224,7 +224,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
         (f"data/files/{file2_fn}", "test-second"),
         ("data/metadata/marcxml-test.xml", "<p>XML 2</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 2"}'),
-        ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
+        ("bagit.txt", "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"),
         ("fetch.txt", set([f"{fs1.getsyspath(f1_dp)} 4 {f1_dp}"])),
         (
             "manifest-md5.txt",
@@ -260,7 +260,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
                 f"Bagging-Date: {dt}\nPayload-Oxum: 165.5\n"
                 f"External-Identifier: {sips[1].id}/SIPBagIt-v1.0.0\n"
-                + "External-Description: BagIt archive of SIP."
+                "External-Description: BagIt archive of SIP.\n"
             ),
         ),
     ]
@@ -269,7 +269,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
         (f"data/files/{file3_fn}", "test-third"),
         ("data/metadata/marcxml-test.xml", "<p>XML 3</p>"),
         ("data/metadata/json-test.json", '{"title": "JSON 3"}'),
-        ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
+        ("bagit.txt", "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"),
         (
             "fetch.txt",
             set(
@@ -322,14 +322,14 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
                 f"Bagging-Date: {dt}\nPayload-Oxum: 236.6\n"
                 f"External-Identifier: {sips[2].id}/SIPBagIt-v1.0.0\n"
-                + "External-Description: BagIt archive of SIP."
+                "External-Description: BagIt archive of SIP.\n"
             ),
         ),
     ]
 
     expected_sip5 = [
         ("data/metadata/marcxml-test.xml", "<p>XML 5 Meta Only</p>"),
-        ("bagit.txt", "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8"),
+        ("bagit.txt", "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"),
         (
             "fetch.txt",
             set(
@@ -380,7 +380,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
                 f"Bagging-Date: {dt}\nPayload-Oxum: 227.5\n"
                 f"External-Identifier: {sips[4].id}/SIPBagIt-v1.0.0\n"
-                + "External-Description: BagIt archive of SIP."
+                "External-Description: BagIt archive of SIP.\n"
             ),
         ),
     ]
