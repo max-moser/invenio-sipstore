@@ -60,6 +60,7 @@ def test_sip_model(db):
 def test_sip_file_model(app, db, sips):
     """Test the SIPFile model."""
     sip = sips[0]
+    old_max_len = app.config["SIPSTORE_FILEPATH_MAX_LEN"]
     app.config["SIPSTORE_FILEPATH_MAX_LEN"] = 15
     with pytest.raises(ValueError) as excinfo:
         SIPFile(
@@ -68,6 +69,7 @@ def test_sip_file_model(app, db, sips):
             file_id=sip.files[0].file_id,
         )
     assert "Filepath too long" in str(excinfo.value)
+    app.config["SIPSTORE_FILEPATH_MAX_LEN"] = old_max_len
 
 
 def test_sip_file_storage_location(db, sips):

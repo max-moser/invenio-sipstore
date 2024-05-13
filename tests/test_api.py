@@ -12,20 +12,55 @@
 
 import json
 import tempfile
-import uuid
 from io import BytesIO
 from shutil import rmtree
 
+import pytest
+from invenio_access.permissions import system_identity
 from invenio_accounts.testutils import create_test_user
 from invenio_files_rest.models import Bucket, Location, ObjectVersion
-from invenio_pidstore.models import PersistentIdentifier, PIDStatus
-from invenio_records_files.api import Record
-from invenio_records_files.models import RecordsBuckets
+from invenio_rdm_records.proxies import current_rdm_records_service as records_service
 
 from invenio_sipstore.api import SIP, RecordSIP
 from invenio_sipstore.models import SIP as SIP_
 from invenio_sipstore.models import RecordSIP as RecordSIP_
 from invenio_sipstore.models import SIPFile, SIPMetadata, SIPMetadataType
+
+
+@pytest.fixture()
+def minimal_record(running_app):
+    """Minimal record data as dict coming from the external world."""
+    return {
+        "pids": {},
+        "access": {
+            "record": "public",
+            "files": "public",
+        },
+        "files": {
+            "enabled": True,
+        },
+        "metadata": {
+            "creators": [
+                {
+                    "person_or_org": {
+                        "family_name": "Brown",
+                        "given_name": "Troy",
+                        "type": "personal",
+                    }
+                },
+                {
+                    "person_or_org": {
+                        "name": "Troy Inc.",
+                        "type": "organizational",
+                    },
+                },
+            ],
+            "publication_date": "2020-06-01",
+            "publisher": "Acme Inc",
+            "resource_type": {"id": "image-photo"},
+            "title": "A Romans story",
+        },
+    }
 
 
 def test_SIP(db):
@@ -70,7 +105,7 @@ def test_SIP_files(db):
     obj = ObjectVersion.create(bucket, "test.txt", stream=BytesIO(content))
     db.session.commit()
     # we attach it to the SIP
-    sf = api_sip.attach_file(obj)
+    api_sip.attach_file(obj)
     db.session.commit()
     assert len(api_sip.files) == 1
     assert api_sip.files[0].filepath == "test.txt"
@@ -94,7 +129,7 @@ def test_SIP_metadata(db):
     # we create a dummy metadata
     metadata = json.dumps({"this": "is", "not": "sparta"})
     # we attach it to the SIP
-    sm = api_sip.attach_metadata("json-test", metadata)
+    api_sip.attach_metadata("json-test", metadata)
     db.session.commit()
     assert len(api_sip.metadata) == 1
     assert api_sip.metadata[0].type.format == "json"
@@ -174,24 +209,18 @@ def test_SIP_create(app, db, mocker):
     rmtree(tmppath)
 
 
-def test_RecordSIP(db, locations):
+def test_RecordSIP(db, locations, minimal_record):
     """Test RecordSIP API class."""
     user = create_test_user("test@example.org")
     agent = {"email": "user@invenio.org", "ip_address": "1.1.1.1"}
     # we create a record
-    recid = uuid.uuid4()
-    pid = PersistentIdentifier.create(
-        "recid",
-        "1337",
-        object_type="rec",
-        object_uuid=recid,
-        status=PIDStatus.REGISTERED,
-    )
-    title = {"title": "record test"}
-    record = Record.create(title, recid)
+    metadata = {**minimal_record, "files": {"enabled": False}}
+    draft = records_service.create(system_identity, metadata)
+    record = records_service.publish(system_identity, draft.id)._record
+
     # we create the models
     sip = SIP.create(True, user_id=user.id, agent=agent)
-    recordsip = RecordSIP_(sip_id=sip.id, pid_id=pid.id)
+    recordsip = RecordSIP_(sip_id=sip.id, pid_id=record.pid.pid_value)
     db.session.commit()
     # We create an API SIP on top of it
     api_recordsip = RecordSIP(recordsip, sip)
@@ -199,7 +228,7 @@ def test_RecordSIP(db, locations):
     assert api_recordsip.sip.id == sip.id
 
 
-def test_RecordSIP_create(app, db, mocker):
+def test_RecordSIP_create(app, db, mocker, minimal_record):
     """Test create method from the API class RecordSIP."""
     # we setup a file storage
     tmppath = tempfile.mkdtemp()
@@ -209,51 +238,30 @@ def test_RecordSIP_create(app, db, mocker):
         title="JSON Test",
         name="json-test",
         format="json",
-        schema="local://definitions#/schema.json",
+        schema=records_service.record_cls.schema.value,
     )
     db.session.add(mtype)
     db.session.commit()
+
     # first we create a record
-    recid = uuid.uuid4()
-    pid = PersistentIdentifier.create(
-        "recid",
-        "1337",
-        object_type="rec",
-        object_uuid=recid,
-        status=PIDStatus.REGISTERED,
+    draft = records_service.create(system_identity, minimal_record)
+    draft._obj.bucket.default_storage_class = "L"
+    records_service.draft_files.init_files(
+        system_identity, draft.id, [{"key": "test.txt"}]
     )
-
-    class SkipValidator:
-        """Custom validator for skipping the checks."""
-
-        def __init__(self, *args, **kwargs):
-            """Constructor."""
-            pass
-
-        def check_schema(self, *args, **kwargs):
-            """Assume the schema is valid."""
-            return True
-
-        def iter_errors(self, *args, **kwargs):
-            """Report no errors."""
-            return []
-
-    record = Record.create(
-        {"title": "record test", "$schema": "local://definitions#/schema.json"},
-        recid,
-        validator=SkipValidator,
+    records_service.draft_files.set_file_content(
+        system_identity, draft.id, "test.txt", BytesIO(b"test file")
     )
-    # we add a file to the record
-    bucket = Bucket.create()
-    content = b"Test file\n"
-    RecordsBuckets.create(record=record.model, bucket=bucket)
-    record.files["test.txt"] = BytesIO(content)
+    records_service.draft_files.commit_file(system_identity, draft.id, "test.txt")
+    record = records_service.publish(system_identity, draft.id)._record
     db.session.commit()
+
     # Let's create a SIP
     user = create_test_user("test@example.org")
     agent = {"email": "user@invenio.org", "ip_address": "1.1.1.1"}
-    rsip = RecordSIP.create(pid, record, True, user_id=user.id, agent=agent)
+    rsip = RecordSIP.create(record, True, user_id=user.id, agent=agent)
     db.session.commit()
+
     # test!
     assert RecordSIP_.query.count() == 1
     assert SIP_.query.count() == 1
@@ -263,11 +271,12 @@ def test_RecordSIP_create(app, db, mocker):
     assert len(rsip.sip.metadata) == 1
     metadata = rsip.sip.metadata[0]
     assert metadata.type.format == "json"
-    assert '"title": "record test"' in metadata.content
+    assert metadata.content == json.dumps(record.dumps())
     assert rsip.sip.archivable is True
+
     # we try with no files
     rsip = RecordSIP.create(
-        pid, record, True, create_sip_files=False, user_id=user.id, agent=agent
+        record, True, create_sip_files=False, user_id=user.id, agent=agent
     )
     assert SIPFile.query.count() == 1
     assert SIPMetadata.query.count() == 2
@@ -282,7 +291,6 @@ def test_RecordSIP_create(app, db, mocker):
     db.session.commit()
 
     rsip = RecordSIP.create(
-        pid,
         record,
         True,
         create_sip_files=False,

@@ -16,23 +16,18 @@ import tempfile
 from io import BytesIO
 
 import pytest
-from flask import Flask
 from fs.opener import open_fs
-from invenio_accounts import InvenioAccounts
-from invenio_db import InvenioDB
+from invenio_access.permissions import system_identity
+from invenio_app.factory import create_app as _create_app
 from invenio_db import db as db_
-from invenio_files_rest import InvenioFilesREST
 from invenio_files_rest.models import FileInstance, Location
-from invenio_i18n import InvenioI18N
-from invenio_jsonschemas import InvenioJSONSchemas
-from invenio_records import InvenioRecords
-from invenio_search import InvenioSearch
-from sqlalchemy_utils.functions import create_database, database_exists, drop_database
+from invenio_vocabularies.proxies import current_service as vocabulary_service
+from invenio_vocabularies.records.api import Vocabulary
 
-from invenio_sipstore import InvenioSIPStore
 from invenio_sipstore.api import SIP as SIPApi
 from invenio_sipstore.archivers.bagit_archiver import BagItArchiver
 from invenio_sipstore.models import SIP, SIPFile, SIPMetadataType
+from invenio_sipstore.proxies import current_sipstore
 
 
 @pytest.fixture(scope="session")
@@ -45,46 +40,36 @@ def instance_path():
     shutil.rmtree(path)
 
 
-@pytest.fixture()
-def base_app(instance_path):
-    """Flask application fixture."""
-    app = Flask("testapp", instance_path=instance_path)
-    app.config.update(
-        TESTING=True,
-        SECRET_KEY="CHANGE_ME",
-        SECURITY_PASSWORD_SALT="CHANGE_ME",
-        SQLALCHEMY_DATABASE_URI=os.environ.get(
-            "SQLALCHEMY_DATABASE_URI", "sqlite:///test.db"
-        ),
+@pytest.fixture(scope="module")
+def app_config(app_config):
+    app_config["TESTING"] = True
+    app_config["SECRET_KEY"] = "CHANGE_ME"
+    app_config["SECURITY_PASSWORD_SALT"] = "CHANGE_ME"
+
+    # JSONSchema configuration
+    app_config["JSONSCHEMAS_HOST"] = "not-used"
+    app_config["RECORDS_REFRESOLVER_STORE"] = (
+        "invenio_jsonschemas.proxies.current_refresolver_store"
     )
-    InvenioSIPStore(app)
-    return app
+    app_config["RECORDS_REFRESOLVER_CLS"] = (
+        "invenio_records.resolver.InvenioRefResolver"
+    )
+
+    # file storage classes
+    app_config["FILES_REST_STORAGE_CLASS_LIST"] = {
+        "L": "Local",
+        "F": "Fetch",
+        "R": "Remote",
+    }
+    app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
+
+    return app_config
 
 
-@pytest.fixture()
-def app(base_app):
-    """Flask application fixture."""
-    InvenioDB(base_app)
-    InvenioRecords(base_app)
-    InvenioSearch(base_app)
-    InvenioAccounts(base_app)
-    InvenioFilesREST(base_app)
-    InvenioJSONSchemas(base_app)
-    InvenioI18N(base_app)
-    with base_app.app_context():
-        yield base_app
-
-
-@pytest.fixture()
-def db(app):
-    """Setup database."""
-    if not database_exists(str(db_.engine.url)):
-        create_database(str(db_.engine.url))
-    db_.create_all()
-    yield db_
-    db_.session.remove()
-    db_.drop_all()
-    drop_database(str(db_.engine.url))
+@pytest.fixture(scope="module")
+def create_app(instance_path):
+    """Application factory fixture."""
+    return _create_app
 
 
 @pytest.fixture()
@@ -247,17 +232,55 @@ def secure_sipfile_name_formatter(app):
     app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = (
         "invenio_sipstore.archivers.utils.secure_sipfile_name_formatter"
     )
+    # clear the cache
+    del current_sipstore.sipfile_name_formatter
+
     yield
     app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = fmt
+    del current_sipstore.sipfile_name_formatter
 
 
 @pytest.fixture()
 def custom_sipmetadata_name_formatter(app):
     """Temporarily change the default name formatter for SIPMetadata files."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"]
-
     app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = (
         lambda sm: f"{sm.type.name}-metadata.{sm.type.format}"
     )
+
+    # clear the cache
+    del current_sipstore.sipmetadata_name_formatter
+
     yield
     app.config["SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER"] = fmt
+    del current_sipstore.sipmetadata_name_formatter
+
+
+@pytest.fixture()
+def running_app(app):
+    """A running app with relevant RDM features enabled."""
+    vocabulary_service.create_type(system_identity, "resourcetypes", "rsrct")
+
+    vocabulary_service.create(
+        system_identity,
+        {
+            "id": "image-photo",
+            "props": {
+                "csl": "graphic",
+                "datacite_general": "Image",
+                "datacite_type": "Photo",
+                "openaire_resourceType": "25",
+                "openaire_type": "dataset",
+                "eurepo": "info:eu-repo/semantic/other",
+                "schema.org": "https://schema.org/Photograph",
+                "subtype": "image-photo",
+                "type": "image",
+            },
+            "icon": "chart bar outline",
+            "title": {"en": "Photo"},
+            "tags": ["depositable", "linkable"],
+            "type": "resourcetypes",
+        },
+    )
+
+    Vocabulary.index.refresh()

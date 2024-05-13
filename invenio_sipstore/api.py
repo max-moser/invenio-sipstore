@@ -207,7 +207,6 @@ class RecordSIP:
     @classmethod
     def create(
         cls,
-        pid,
         record,
         archivable,
         create_sip_files=True,
@@ -215,7 +214,7 @@ class RecordSIP:
         agent=None,
         sip_metadata_type=None,
     ):
-        """Create a SIP, from the PID and the Record.
+        """Create a SIP from the Record.
 
         Apart from the SIP itself, it also creates ``RecordSIP`` for the
         SIP-PID-Record relationship, as well as ``SIPFile`` objects for each
@@ -225,8 +224,6 @@ class RecordSIP:
         the corresponding RecordSIP attributes ``sip``, ``sip.files`` and
         ``sip.metadata``.
 
-        :param pid: PID of the published record ('recid').
-        :type pid: :py:class:`invenio_pidstore.models.PersistentIdentifier`
         :param record: Record for which the SIP should be created.
         :type record: :py:class:`invenio_records.api.Record`
         :param bool archivable: tells if the record should be archived.
@@ -241,19 +238,26 @@ class RecordSIP:
         :returns: RecordSIP object.
         :rtype: :py:class:`invenio_sipstore.api.RecordSIP`
         """
-        files = record.files if create_sip_files else None
+        if create_sip_files and record.files.enabled:
+            files = [rf.file for rf in record.files.values()]
+        else:
+            files = []
+
         if sip_metadata_type:
             mtype = SIPMetadataType.get_from_name(sip_metadata_type)
         else:
             mtype = SIPMetadataType.get_from_schema(record["$schema"])
+
         metadata = {mtype.name: json.dumps(record.dumps())}
+
         with db.session.begin_nested():
             sip = SIP.create(
                 archivable, files=files, metadata=metadata, user_id=user_id, agent=agent
             )
-            model = RecordSIP_(sip_id=sip.id, pid_id=pid.id)
+            model = RecordSIP_(sip_id=sip.id, pid_id=record.pid.id)
             db.session.add(model)
             recsip = cls(model, sip)
+
         return recsip
 
 
