@@ -9,12 +9,12 @@
 
 """Submission Information Package store for Invenio."""
 
+from invenio_base.utils import load_or_import_from_config
 from invenio_db import db
 from invenio_files_rest.models import Location
 from werkzeug.utils import cached_property
 
 from . import config
-from .utils import load_or_import_from_config
 
 
 class _InvenioSIPStoreState:

@@ -51,10 +51,6 @@ Signals
 Utilities
 ---------
 
-.. automodule:: invenio_sipstore.utils
-    :members:
-
-
 .. automodule:: invenio_sipstore.archivers.utils
     :members:
 
