@@ -21,7 +21,7 @@ from invenio_accounts.testutils import create_test_user
 from invenio_files_rest.models import Bucket, Location, ObjectVersion
 from invenio_rdm_records.proxies import current_rdm_records_service as records_service
 
-from invenio_sipstore.api import SIP, RecordSIP
+from invenio_sipstore.api import SIP, RecordSIP, default_agent_info_builder
 from invenio_sipstore.models import SIP as SIP_
 from invenio_sipstore.models import RecordSIP as RecordSIP_
 from invenio_sipstore.models import SIPFile, SIPMetadata, SIPMetadataType
@@ -137,11 +137,11 @@ def test_SIP_metadata(db):
     assert sip.sip_metadata[0].content == metadata
 
 
-def test_SIP_build_agent_info(app, mocker):
-    """Test SIP._build_agent_info static method."""
+def test_SIP_default_agent_info_builder(app, mocker):
+    """Test the default function for building agent info."""
     with app.test_request_context():
         # with no information, we get an empty dict
-        agent = SIP._build_agent_info()
+        agent = default_agent_info_builder()
         assert agent == {}
         # we mock flask function to give more info
         mocker.patch(
@@ -156,7 +156,7 @@ def test_SIP_build_agent_info(app, mocker):
         type(mock_current_user).email = mocker.PropertyMock(
             return_value="test@invenioso.org"
         )
-        agent = SIP._build_agent_info()
+        agent = default_agent_info_builder()
         assert agent == {"ip_address": "localhost", "email": "test@invenioso.org"}
 
 

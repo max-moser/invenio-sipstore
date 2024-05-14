@@ -33,23 +33,6 @@ class SIP:
         """
         self.model = sip
 
-    @staticmethod
-    def _build_agent_info():
-        """Build the SIP agent info.
-
-        This method can be changed in the config to suit your needs, see
-        :py:data:`invenio_sipstore.config.SIPSTORE_AGENT_FACTORY`
-
-        :returns: Agent information regarding the SIP.
-        :rtype: dict
-        """
-        agent = dict()
-        if has_request_context() and request.remote_addr:
-            agent["ip_address"] = request.remote_addr
-            if current_user.is_authenticated and current_user.email:
-                agent["email"] = current_user.email
-        return agent
-
     @property
     def id(self):
         """Return the ID of the associated model."""
@@ -261,6 +244,19 @@ class RecordSIP:
         return recsip
 
 
-def _build_agent_info():
-    """Alias for ``SIP._build_agent_info()``."""
-    SIP._build_agent_info()
+def default_agent_info_builder():
+    """Default builder for the SIP agent info, with IP and email address.
+
+    This method can be changed in the config to suit your needs, see
+    :py:data:`invenio_sipstore.config.SIPSTORE_AGENT_FACTORY`
+
+    :returns: Agent information regarding the SIP.
+    :rtype: dict
+    """
+    agent = {}
+    if has_request_context() and request.remote_addr:
+        agent["ip_address"] = request.remote_addr
+        if current_user and current_user.is_authenticated and current_user.email:
+            agent["email"] = current_user.email
+
+    return agent
