@@ -63,6 +63,11 @@ def app_config(app_config):
     }
     app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
 
+    # test-friendly default config
+    app_config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = (
+        "invenio_sipstore.archivers.utils.simple_sipfile_name_formatter"
+    )
+
     return app_config
 
 
@@ -226,11 +231,11 @@ def archive_fs(locations):
 
 
 @pytest.fixture()
-def secure_sipfile_name_formatter(app):
+def secure_uuid_sipfile_name_formatter(app):
     """Temporarily change the default name formatter for SIPFiles."""
     fmt = app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"]
     app.config["SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER"] = (
-        "invenio_sipstore.archivers.utils.secure_sipfile_name_formatter"
+        "invenio_sipstore.archivers.utils.secure_uuid_sipfile_name_formatter"
     )
     # clear the cache
     del current_sipstore.sipfile_name_formatter

@@ -47,7 +47,7 @@ SIPSTORE_ARCHIVER_SIPMETADATA_NAME_FORMATTER = (
 """Filename formatter for archived SIPMetadata."""
 
 SIPSTORE_ARCHIVER_SIPFILE_NAME_FORMATTER = (
-    "invenio_sipstore.archivers.utils.default_sipfile_name_formatter"
+    "invenio_sipstore.archivers.utils.secure_sipfile_name_formatter"
 )
 """Filename formatter for the archived SIPFile."""
 

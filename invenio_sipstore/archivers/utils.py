@@ -12,6 +12,11 @@
 from werkzeug.utils import secure_filename
 
 
+def _secure_filename(filename):
+    """Call ``secure_filename()`` and replace dashes with underscores."""
+    return secure_filename(filename).replace("-", "_")
+
+
 def chunks(iterable, n):
     """Yield iterable split into chunks.
 
@@ -67,10 +72,11 @@ def default_sipmetadata_name_formatter(sipmetadata):
     return f"{sipmetadata.type.name}.{sipmetadata.type.format}"
 
 
-def default_sipfile_name_formatter(sipfile):
-    """Default generator the SIPFile filenames.
+def simple_sipfile_name_formatter(sipfile):
+    """Simple generator the SIPFile filenames.
 
-    Writes doen the file in the archive under the original filename.
+    Keeps the original filename for the file in the archive.
+    Writes the file in the archive under the original filename.
 
     WARNING: This can potentially cause security and portability issues if
     the SIPFile filenames come from the users.
@@ -81,17 +87,47 @@ def default_sipfile_name_formatter(sipfile):
 def secure_sipfile_name_formatter(sipfile):
     """Secure filename generator for the SIPFiles.
 
-    Since the filenames can be potentially dangerous, not compatible
+    Since the filenames can be potentially dangerous, incompatible
     with the underlying file system, or not portable across operating systems
-    this formatter writes the files as a generic name: UUID-<secure_filename>,
-    where <secure_filename> is the original filename which was stripped from
-    any malicious parts (UNIX directory
-    navigation '.', '..', '/'), special protocol parts ('ftp://', 'http://'),
-    special device names on Windows systems, etc. and for maximum portability
-    contains only ASCII characters.
-    Since this operation can cause name collisions, the UUID of the
-    underlying FileInstance is appended as prefix of the filename.
+    this formatter uses :py:func:`werkzeug.utils.secure_filename` to replace
+    potentially problematic parts in the filename (like UNIX directory navigation:
+    ".", "..", "/", etc.).
     For more information on the ``secure_filename`` function visit:
     ``http://werkzeug.pocoo.org/docs/utils/#werkzeug.utils.secure_filename``
+    Additionally, dashes are replaced with underscores.
+
+    Since this operation alone could result in name collisions with "sibling"
+    SIPFiles (the ones that are linked to the same SIP), their names are also
+    calculated and checked.
+    In case of a detected collision, the resulting filenames are numbered
+    (based on their ID, which ensures reproducibility).
+    """
+    filename = _secure_filename(sipfile.filepath)
+    siblings = sorted(sipfile.sip.sip_files, key=lambda sf: sf.file_id)
+    colliding_siblings = [
+        sf for sf in siblings if _secure_filename(sf.filepath) == filename
+    ]
+
+    if len(colliding_siblings) > 1:
+        # at least one other SIPFile would receive the same result, so we add
+        # numbering to avoid the collision
+        # note: since we replace dashes with underscores in ``_secure_filename()``,
+        #       this operation cannot create new collisions
+        return f"{colliding_siblings.index(sipfile) + 1}-{filename}"
+
+    else:
+        # no collision detected
+        return filename or "-"
+
+
+def secure_uuid_sipfile_name_formatter(sipfile):
+    """Secure and collision-resistant filename generator for the SIPFiles.
+
+    This is very similar to :py:func:`secure_sipfile_name_formatter` in that it
+    uses :py:func:`werkzeug.utils.secure_filename`.
+    In contrast to the other function, it will use the file's UUID as prefix
+    to avoid naming conflicts however.
+    This eliminates the necessity to have a look at the "sibling" SIPFiles,
+    but will result in longer and more cluttered filenames.
     """
     return f"{sipfile.file_id}-{secure_filename(sipfile.filepath)}"

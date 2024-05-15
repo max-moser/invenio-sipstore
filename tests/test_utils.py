@@ -11,8 +11,12 @@
 
 from uuid import UUID
 
-from invenio_sipstore.archivers.utils import chunks, default_archive_directory_builder
-from invenio_sipstore.archivers.utils import secure_sipfile_name_formatter as fmt
+from invenio_sipstore.archivers.utils import (
+    chunks,
+    default_archive_directory_builder,
+    secure_sipfile_name_formatter,
+    secure_uuid_sipfile_name_formatter,
+)
 from invenio_sipstore.models import SIP
 
 
@@ -47,7 +51,7 @@ def test_default_archive_directory_builder(app, db):
     ]
 
 
-def test_secure_sipfilename_formatter(app, db):
+def test_secure_uuid_sipfilename_formatter(app, db):
     """Test some potentially dangerous or incompatible SIPFile filepaths."""
 
     class MockSIPFile:
@@ -60,6 +64,7 @@ def test_secure_sipfilename_formatter(app, db):
         ("../../foobar.txt", "foobar.txt"),
         ("/etc/shadow", "etc_shadow"),
         ("łóżźćęą", "ozzcea"),
+        ("1-", "1-"),
         ("你好，世界", ""),
         ("مرحبا بالعالم", ""),
         (
@@ -74,4 +79,54 @@ def test_secure_sipfilename_formatter(app, db):
         ("Name with spaces.txt", "Name_with_spaces.txt"),
     ]
     for orig, secure in examples:
-        assert fmt(MockSIPFile(sip_id, orig)) == f"{sip_id}-{secure}"
+        formatted_name = secure_uuid_sipfile_name_formatter(MockSIPFile(sip_id, orig))
+        assert formatted_name == f"{sip_id}-{secure}"
+
+
+def test_secure_sipfilename_formatter(app, db):
+    """Test some potentially dangerous or incompatible SIPFile filepaths."""
+
+    class MockSIP:
+        def __init__(self, sip_files=None):
+            self.sip_files = sip_files or []
+
+    class MockSIPFile:
+        def __init__(self, file_id, filepath, sip):
+            self.file_id = file_id
+            self.filepath = filepath
+            self.sip = sip
+            self.sip.sip_files.append(self)
+
+    examples = [
+        ("../../foobar.txt", "foobar.txt"),
+        ("/etc/shadow", "etc_shadow"),
+        ("łóżźćęą", "ozzcea"),
+        ("1-", "1_"),
+        ("你好，世界", "1-"),
+        ("مرحبا بالعالم", "2-"),
+        (
+            "𝓺𝓾𝓲𝓬𝓴 𝓫𝓻𝓸𝔀𝓷 𝓯𝓸𝔁 𝓳𝓾𝓶𝓹𝓼 𝓸𝓿𝓮𝓻 𝓽𝓱𝓮 𝓵𝓪𝔃𝔂 𝓭𝓸𝓰",
+            "quick_brown_fox_jumps_over_the_lazy_dog",
+        ),
+        ("ftp://testing.url.com", "ftp_testing.url.com"),
+        ("https://łóżźć.url.com", "https_ozzc.url.com"),
+        (".dotfile", "1-dotfile"),
+        ("dotfile", "2-dotfile"),
+        ("$PATH", "PATH"),
+        ("./a/regular/nested/file.txt", "a_regular_nested_file.txt"),
+        ("Name with spaces.txt", "Name_with_spaces.txt"),
+    ]
+
+    sip = MockSIP()
+    sip_files = [
+        (MockSIPFile(id_, fp, sip=sip), efp) for (id_, (fp, efp)) in enumerate(examples)
+    ]
+
+    # try formatting some SIPFile names, including some that would cause collisions
+    for sip_file, expected_result in sip_files:
+        formatted_name = secure_sipfile_name_formatter(sip_file)
+        assert formatted_name == expected_result
+
+    # try an empty filename
+    sip_file = MockSIPFile(0, "", sip=MockSIP())
+    assert secure_sipfile_name_formatter(sip_file) == "-"

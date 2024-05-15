@@ -319,6 +319,7 @@ intersphinx_mapping = {
     ),
     "invenio_pidstore": ("https://invenio-pidstore.readthedocs.io/en/latest/", None),
     "invenio_records": ("https://invenio-records.readthedocs.io/en/latest/", None),
+    "werkzeug": ("https://werkzeug.palletsprojects.com/en/latest/", None),
 }
 
 # Autodoc configuraton.

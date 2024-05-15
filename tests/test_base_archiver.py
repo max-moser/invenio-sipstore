@@ -150,7 +150,7 @@ def test_name_formatters(
     sip_metadata_types,
     locations,
     archive_fs,
-    secure_sipfile_name_formatter,
+    secure_uuid_sipfile_name_formatter,
     custom_sipmetadata_name_formatter,
 ):
     """Test archiving with custom filename formatter."""

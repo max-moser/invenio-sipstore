@@ -116,7 +116,7 @@ def _read_file(fs, filepath):
     }
 
 
-def test_write_patched(mocker, sips, archive_fs, secure_sipfile_name_formatter):
+def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_formatter):
     """Test the BagIt archiving with previous SIP as a base."""
     # Mock the bagging date generation so the 'Bagging-Date' tag is predefined
     dt = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
