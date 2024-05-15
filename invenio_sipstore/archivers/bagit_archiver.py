@@ -49,7 +49,7 @@ class BagItArchiver(BaseArchiver):
         patch_of=None,
         include_all_previous=False,
         tags=None,
-        filenames_mapping_file="data/filenames.txt",
+        filenames_mapping_file="data/original-filenames.json",
         hash_algorithm="md5",
     ):
         """Constructor of the BagIt Archiver.

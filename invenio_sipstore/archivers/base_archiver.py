@@ -14,6 +14,7 @@ to worry about e.g. files to disk.
 """
 
 import hashlib
+import json
 import os
 from io import BytesIO
 
@@ -220,7 +221,10 @@ class BaseArchiver:
         See ``default_sipfile_name_formatter()`` and
         ``secure_sipfile_name_formatter()``.
         """
-        content = "\n".join(f"{f['filename']} {f['sipfilepath']}" for f in filesinfo)
+        sorted_fileinfos = sorted(filesinfo, key=lambda f: f["filename"])
+        content = json.dumps(
+            {f["filename"]: f["sipfilepath"] for f in sorted_fileinfos}, indent=1
+        )
         return self._generate_extra_info(content, self.filenames_mapping_file)
 
     def _get_data_files(self):

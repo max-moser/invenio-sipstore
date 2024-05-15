@@ -10,6 +10,7 @@
 """Module tests for the BagItArchiver class."""
 
 import hashlib
+import json
 from datetime import datetime
 
 import pytest
@@ -54,7 +55,9 @@ def test_write_all_files(sips, archive_fs, hash_alg):
     """Test the creation and export of a SIP with various hash algorithms."""
     sip = sips[0]
     hash_alg, hash_alg_norm = hash_alg
-    archiver = BagItArchiver(sip, hash_algorithm=hash_alg)
+    archiver = BagItArchiver(
+        sip, hash_algorithm=hash_alg, filenames_mapping_file="data/filenames.json"
+    )
     assert not len(archive_fs.listdir("."))
     archiver.write_all_files()
     assert len(archive_fs.listdir(".")) == 1
@@ -70,7 +73,7 @@ def test_write_all_files(sips, archive_fs, hash_alg):
             "data",
         ]
     )
-    assert set(fs.listdir("data")) == set(["metadata", "files", "filenames.txt"])
+    assert set(fs.listdir("data")) == set(["metadata", "files", "filenames.json"])
     assert set(fs.listdir("data/metadata")) == set(
         ["marcxml-test.xml", "json-test.json", "txt-test.txt"]
     )
@@ -139,14 +142,27 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
         return_value=dt,
     )
 
-    arch1 = BagItArchiver(sips[0])
+    arch1 = BagItArchiver(sips[0], filenames_mapping_file="data/filenames.json")
     arch1.write_all_files()
-    arch2 = BagItArchiver(sips[1], patch_of=sips[0])
+    arch2 = BagItArchiver(
+        sips[1], patch_of=sips[0], filenames_mapping_file="data/filenames.json"
+    )
     arch2.write_all_files()
-    arch3 = BagItArchiver(sips[2], patch_of=sips[1], include_all_previous=True)
+    arch3 = BagItArchiver(
+        sips[2],
+        patch_of=sips[1],
+        include_all_previous=True,
+        filenames_mapping_file="data/filenames.json",
+    )
     arch3.write_all_files()
-    arch5 = BagItArchiver(sips[4], patch_of=sips[2], include_all_previous=True)
+    arch5 = BagItArchiver(
+        sips[4],
+        patch_of=sips[2],
+        include_all_previous=True,
+        filenames_mapping_file="data/filenames.json",
+    )
     arch5.write_all_files()
+
     # NOTE: We take only SIP-1, SIP-2, SIP-3 and SIP-5.
     # Enumeration of related objects follows the "sips" fixture naming
     fs1 = archive_fs.opendir(arch1.get_archive_subpath())
@@ -159,19 +175,19 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
     assert len(fs5.listdir(".")) == 6  # Includes 'fetch.txt'
 
     # Check SIP-1,2,3,5 data contents
-    assert set(fs1.listdir("data")) == set(["files", "metadata", "filenames.txt"])
+    assert set(fs1.listdir("data")) == set(["files", "metadata", "filenames.json"])
     assert len(fs1.listdir("data/files")) == 1
     assert len(fs1.listdir("data/metadata")) == 3
 
-    assert set(fs2.listdir("data")) == set(["files", "metadata", "filenames.txt"])
+    assert set(fs2.listdir("data")) == set(["files", "metadata", "filenames.json"])
     assert len(fs2.listdir("data/files")) == 1
     assert len(fs2.listdir("data/metadata")) == 2
 
-    assert set(fs3.listdir("data")) == set(["files", "metadata", "filenames.txt"])
+    assert set(fs3.listdir("data")) == set(["files", "metadata", "filenames.json"])
     assert len(fs3.listdir("data/files")) == 1
     assert len(fs3.listdir("data/metadata")) == 2
 
-    assert set(fs5.listdir("data")) == set(["metadata", "filenames.txt"])
+    assert set(fs5.listdir("data")) == set(["metadata", "filenames.json"])
     assert len(fs5.listdir("data/metadata")) == 1
 
     # Fetch the filenames for easier fixture formatting below
@@ -183,6 +199,12 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
     f1_dp = f"data/files/{file1_fn}"
     f2_dp = f"data/files/{file2_fn}"
     f3_dp = f"data/files/{file3_fn}"
+
+    fn_map = {
+        file1_fn: "foobar.txt",
+        file2_fn: "foobar2.txt",
+        file3_fn: "foobar3.txt",
+    }
 
     assert file2_fn[:36] == file2_rn_fn[:36]
     # Both file2_fn and file2_rn_fn are referring to the same FileInstance,
@@ -209,21 +231,21 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
                         **_read_file(fs1, "data/metadata/txt-test.txt")
                     ),
                     "{checksum} {filepath}".format(
-                        **_read_file(fs1, "data/filenames.txt")
+                        **_read_file(fs1, "data/filenames.json")
                     ),
                 ]
             ),
         ),
         (
-            "data/filenames.txt",
-            set([f"{file1_fn} foobar.txt"]),
+            "data/filenames.json",
+            json.dumps({file1_fn: "foobar.txt"}, indent=1),
         ),
         (
             "bag-info.txt",
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                f"Bagging-Date: {dt}\nPayload-Oxum: 105.5\n"
+                f"Bagging-Date: {dt}\nPayload-Oxum: 115.5\n"
                 f"External-Identifier: {sips[0].id}/SIPBagIt-v1.0.0\n"
                 "External-Description: BagIt archive of SIP.\n"
                 "X-Agent-Email: spiderpig@invenio.org\n"
@@ -252,26 +274,21 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
                         **_read_file(fs2, "data/metadata/json-test.json")
                     ),
                     "{checksum} {filepath}".format(
-                        **_read_file(fs2, "data/filenames.txt")
+                        **_read_file(fs2, "data/filenames.json")
                     ),
                 ]
             ),
         ),
         (
-            "data/filenames.txt",
-            set(
-                [
-                    f"{file1_fn} foobar.txt",
-                    f"{file2_fn} foobar2.txt",
-                ]
-            ),
+            "data/filenames.json",
+            json.dumps({k: fn_map[k] for k in sorted([file1_fn, file2_fn])}, indent=1),
         ),
         (
             "bag-info.txt",
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                f"Bagging-Date: {dt}\nPayload-Oxum: 165.5\n"
+                f"Bagging-Date: {dt}\nPayload-Oxum: 182.5\n"
                 f"External-Identifier: {sips[1].id}/SIPBagIt-v1.0.0\n"
                 "External-Description: BagIt archive of SIP.\n"
             ),
@@ -313,19 +330,15 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
                         **_read_file(fs3, "data/metadata/json-test.json")
                     ),
                     "{checksum} {filepath}".format(
-                        **_read_file(fs3, "data/filenames.txt")
+                        **_read_file(fs3, "data/filenames.json")
                     ),
                 ]
             ),
         ),
         (
-            "data/filenames.txt",
-            set(
-                [
-                    f"{file1_fn} foobar.txt",
-                    f"{file2_fn} foobar2.txt",
-                    f"{file3_fn} foobar3.txt",
-                ]
+            "data/filenames.json",
+            json.dumps(
+                {k: fn_map[k] for k in sorted([file1_fn, file2_fn, file3_fn])}, indent=1
             ),
         ),
         (
@@ -333,7 +346,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                f"Bagging-Date: {dt}\nPayload-Oxum: 236.6\n"
+                f"Bagging-Date: {dt}\nPayload-Oxum: 260.6\n"
                 f"External-Identifier: {sips[2].id}/SIPBagIt-v1.0.0\n"
                 "External-Description: BagIt archive of SIP.\n"
             ),
@@ -371,19 +384,15 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
                         **_read_file(fs5, "data/metadata/marcxml-test.xml")
                     ),
                     "{checksum} {filepath}".format(
-                        **_read_file(fs5, "data/filenames.txt")
+                        **_read_file(fs5, "data/filenames.json")
                     ),
                 ]
             ),
         ),
         (
-            "data/filenames.txt",
-            set(
-                [
-                    f"{file1_fn} foobar.txt",
-                    f"{file2_fn} foobar2.txt",
-                    f"{file3_fn} foobar3.txt",
-                ]
+            "data/filenames.json",
+            json.dumps(
+                {k: fn_map[k] for k in sorted([file1_fn, file2_fn, file3_fn])}, indent=1
             ),
         ),
         (
@@ -391,7 +400,7 @@ def test_write_patched(mocker, sips, archive_fs, secure_uuid_sipfile_name_format
             (
                 "Source-Organization: European Organization for Nuclear Research\n"
                 "Organization-Address: CERN, CH-1211 Geneva 23, Switzerland\n"
-                f"Bagging-Date: {dt}\nPayload-Oxum: 227.5\n"
+                f"Bagging-Date: {dt}\nPayload-Oxum: 251.5\n"
                 f"External-Identifier: {sips[4].id}/SIPBagIt-v1.0.0\n"
                 "External-Description: BagIt archive of SIP.\n"
             ),

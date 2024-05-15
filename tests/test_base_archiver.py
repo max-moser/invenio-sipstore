@@ -9,6 +9,7 @@
 
 """Module tests for the BaseArchiver class."""
 
+import json
 from hashlib import md5
 
 from invenio_sipstore.archivers.base_archiver import BaseArchiver
@@ -155,18 +156,25 @@ def test_name_formatters(
 ):
     """Test archiving with custom filename formatter."""
     sip = sips[3]  # SIP with some naughty filenames
-    archiver = BaseArchiver(sip, filenames_mapping_file="files/filenames.txt")
+    archiver = BaseArchiver(sip, filenames_mapping_file="files/original-filenames.json")
     assert not archive_fs.listdir(".")
     archiver.write_all_files()
     assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
     assert set(fs.listdir(".")) == set(["metadata", "files"])
     assert len(fs.listdir("metadata")) == 2
-    # inside 'files/' there should be 'filenames.txt' file with the mappings
+
+    # inside 'files/' there should be 'original-filenames.json' file with the mappings
     assert len(fs.listdir("files")) == 4
     uuid1 = next(f.file.id for f in sip.files if f.filepath.endswith("txt"))
     uuid2 = next(f.file.id for f in sip.files if f.filepath.endswith("js"))
     uuid3 = next(f.file.id for f in sip.files if f.filepath.endswith("dat"))
+
+    filename_mappings = {
+        f"{uuid1}-foobar.txt": "../../foobar.txt",
+        f"{uuid2}-http_maliciouswebsite.com_hack.js": "http://maliciouswebsite.com/hack.js",  # noqa
+        f"{uuid3}-ozzcae.dat": "łóżźćąę.dat",
+    }
     expected = [
         ("metadata/marcxml-test-metadata.xml", "<p>XML 4 żółć</p>"),
         ("metadata/json-test-metadata.json", '{"title": "JSON 4 żółć"}'),
@@ -177,14 +185,9 @@ def test_name_formatters(
         ),
         (f"files/{uuid3}-ozzcae.dat", "test-sixth π"),
         (
-            "files/filenames.txt",
-            set(
-                [
-                    f"{uuid1}-foobar.txt ../../foobar.txt",
-                    f"{uuid2}-http_maliciouswebsite.com_hack.js "
-                    "http://maliciouswebsite.com/hack.js",
-                    f"{uuid3}-ozzcae.dat łóżźćąę.dat",
-                ]
+            "files/original-filenames.json",
+            json.dumps(
+                {k: filename_mappings[k] for k in sorted(filename_mappings)}, indent=1
             ),
         ),
     ]
