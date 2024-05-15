@@ -13,8 +13,8 @@ The base archiver implements a basic API that allows subclasses to not having
 to worry about e.g. files to disk.
 """
 
+import hashlib
 import os
-from hashlib import md5
 from io import BytesIO
 
 from invenio_db import db
@@ -84,6 +84,7 @@ class BaseArchiver:
         extra_dir="",
         storage_factory=None,
         filenames_mapping_file=None,
+        hash_algorithm="md5",
     ):
         """Base archiver constructor.
 
@@ -98,6 +99,7 @@ class BaseArchiver:
         :param storage_factory: Storage factory used to create a new storage
             class instance.
         :param filenames_mapping_file: Mapping of file names.
+        :param hash_algorithm: The algorithm to use for calculating checksums.
         """
         self.sip = sip if isinstance(sip, SIP) else SIP(sip)
         self.data_dir = data_dir
@@ -105,6 +107,7 @@ class BaseArchiver:
         self.extra_dir = extra_dir
         self.storage_factory = storage_factory or current_sipstore.storage_factory
         self.filenames_mapping_file = filenames_mapping_file
+        self.hash = hashlib.new(hash_algorithm)
 
     def get_archive_base_uri(self):
         """Get the base URI (absolute path) for the archive location.
@@ -178,8 +181,10 @@ class BaseArchiver:
         """Generate the file information dictionary from a SIP metadata."""
         filename = current_sipstore.sipmetadata_name_formatter(sipmetadata)
         filepath = os.path.join(self.metadata_dir, filename)
+        hash = self.hash.copy()
+        hash.update(sipmetadata.content.encode("utf-8"))
         return dict(
-            checksum=f"md5:{md5(sipmetadata.content.encode('utf-8')).hexdigest()}",
+            checksum=f"{hash.name}:{hash.hexdigest()}",
             size=len(sipmetadata.content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),
@@ -189,8 +194,10 @@ class BaseArchiver:
     def _generate_extra_info(self, content, filename):
         """Generate the file information dictionary from a raw content."""
         filepath = os.path.join(self.extra_dir, filename)
+        hash = self.hash.copy()
+        hash.update(content.encode("utf-8"))
         return dict(
-            checksum=f"md5:{md5(content.encode('utf-8')).hexdigest()}",
+            checksum=f"{hash.name}:{hash.hexdigest()}",
             size=len(content),
             filepath=filepath,
             fullpath=self.get_fullpath(filepath),

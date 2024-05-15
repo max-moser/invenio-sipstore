@@ -19,7 +19,7 @@ from werkzeug.utils import import_string
 
 from ..api import SIP
 from ..archivers.base_archiver import BaseArchiver
-from ..models import SIPMetadata, SIPMetadataType, current_jsonschemas
+from ..models import FileInstance, SIPMetadata, SIPMetadataType, current_jsonschemas
 
 
 class BagItArchiver(BaseArchiver):
@@ -50,6 +50,7 @@ class BagItArchiver(BaseArchiver):
         include_all_previous=False,
         tags=None,
         filenames_mapping_file="data/filenames.txt",
+        hash_algorithm="md5",
     ):
         """Constructor of the BagIt Archiver.
 
@@ -102,6 +103,7 @@ class BagItArchiver(BaseArchiver):
         :param filenames_mapping_file: filepath of the file in the archive
             which contains all of SIPFile mappings. If this parameter is
             boolean-resolvable as False, the file will not be created.
+        :param hash_algorithm: The algorithm to use for calculating checksums.
         """
         super().__init__(
             sip,
@@ -109,6 +111,7 @@ class BagItArchiver(BaseArchiver):
             metadata_dir=metadata_dir,
             extra_dir=extra_dir,
             filenames_mapping_file=filenames_mapping_file,
+            hash_algorithm=hash_algorithm,
         )
         self.tags = tags or current_app.config["SIPSTORE_BAGIT_TAGS"]
         self.patch_of = (
@@ -163,11 +166,15 @@ class BagItArchiver(BaseArchiver):
         )
         return self._generate_extra_info(content, "fetch.txt")
 
-    def _generate_md5manifest_content(self, filesinfo):
-        content = "".join(
-            f"{self._get_checksum(f['checksum'])} {f['filepath']}\n" for f in filesinfo
-        )
-        return content
+    def _generate_hash_manifest_content(self, filesinfo):
+        lines = []
+
+        for fi in filesinfo:
+            hash_value = self._get_checksum(fi)
+            line = f"{hash_value} {fi['filepath']}\n"
+            lines.append(line)
+
+        return "".join(lines)
 
     def get_manifest_file(self, filesinfo):
         """Create the manifest file specifying the checksum of the files.
@@ -175,8 +182,8 @@ class BagItArchiver(BaseArchiver):
         :return: the name of the file and its content
         :rtype: tuple
         """
-        content = self._generate_md5manifest_content(filesinfo)
-        return self._generate_extra_info(content, "manifest-md5.txt")
+        content = self._generate_hash_manifest_content(filesinfo)
+        return self._generate_extra_info(content, f"manifest-{self.hash.name}.txt")
 
     def _generate_payload_oxum(self, filesinfo):
         return f"{sum([f['size'] for f in filesinfo])}.{len(filesinfo)}"
@@ -240,8 +247,8 @@ class BagItArchiver(BaseArchiver):
         :return: the name of the file and its content
         :rtype: tuple
         """
-        content = self._generate_md5manifest_content(filesinfo)
-        return self._generate_extra_info(content, "tagmanifest-md5.txt")
+        content = self._generate_hash_manifest_content(filesinfo)
+        return self._generate_extra_info(content, f"tagmanifest-{self.hash.name}.txt")
 
     def get_all_files(self):
         """Create the BagIt metadata object."""
@@ -358,14 +365,26 @@ class BagItArchiver(BaseArchiver):
         write_filesinfo = [fi for fi in bagit_meta["files"] if not self._is_fetched(fi)]
         return super().write_all_files(filesinfo=write_filesinfo)
 
-    @staticmethod
-    def _get_checksum(checksum, expected="md5"):
+    def _get_checksum(self, file_info):
         """Return the checksum if the type is the expected."""
-        checksum = checksum.split(":")
-        if checksum[0] != expected or len(checksum) != 2:
-            raise AttributeError("Checksum format is not correct.")
-        else:
-            return checksum[1]
+        try:
+            alg, value = file_info["checksum"].split(":", 1)
+            if alg == self.hash.name:
+                return value
+
+        except ValueError:
+            pass
+
+        # if it wasn't pre-calculated, we need to go the slow way...
+        hash = self.hash.copy()
+        file_instance = db.session.query(FileInstance).get(file_info["file_uuid"])
+        storage = file_instance.storage()
+        with storage.open("rb") as f:
+            # TODO: find reasonable buffer size (64k seems a bit low nowadays)
+            while data := f.read(64 * 1024):
+                hash.update(data)
+
+        return hash.hexdigest()
 
 
 def _generate_agent_tags(agent):

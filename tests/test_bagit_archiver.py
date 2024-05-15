@@ -9,8 +9,8 @@
 
 """Module tests for the BagItArchiver class."""
 
+import hashlib
 from datetime import datetime
-from hashlib import md5
 
 import pytest
 
@@ -39,15 +39,6 @@ def test_constructor(sips):
     assert isinstance(a2.patch_of, SIPApi)
 
 
-def test_get_checksum():
-    """Test the function _get_checksum."""
-    with pytest.raises(AttributeError):
-        BagItArchiver._get_checksum("sha1:12")
-    with pytest.raises(AttributeError):
-        BagItArchiver._get_checksum("md5")
-    assert BagItArchiver._get_checksum("md5:12") == "12"
-
-
 def test_get_all_files(sips):
     """Test the function get_all_files."""
     archiver = BagItArchiver(sips[0])
@@ -55,19 +46,26 @@ def test_get_all_files(sips):
     assert len(files) == 9
 
 
-def test_write_all_files(sips, archive_fs):
-    """Test the functions used to create an export of the SIP."""
+@pytest.mark.parametrize(
+    "hash_alg",
+    [("MD5", "md5"), ("SHA-1", "sha1"), ("sha-256", "sha256"), ("sha-512", "sha512")],
+)
+def test_write_all_files(sips, archive_fs, hash_alg):
+    """Test the creation and export of a SIP with various hash algorithms."""
     sip = sips[0]
-    archiver = BagItArchiver(sip)
+    hash_alg, hash_alg_norm = hash_alg
+    archiver = BagItArchiver(sip, hash_algorithm=hash_alg)
     assert not len(archive_fs.listdir("."))
     archiver.write_all_files()
     assert len(archive_fs.listdir(".")) == 1
     fs = archive_fs.opendir(archiver.get_archive_subpath())
+
+    # check if all expected files are there
     assert set(fs.listdir(".")) == set(
         [
-            "tagmanifest-md5.txt",
+            f"tagmanifest-{hash_alg_norm}.txt",
             "bagit.txt",
-            "manifest-md5.txt",
+            f"manifest-{hash_alg_norm}.txt",
             "bag-info.txt",
             "data",
         ]
@@ -81,6 +79,21 @@ def test_write_all_files(sips, archive_fs):
             "foobar.txt",
         ]
     )
+
+    # check if the specified hashes are valid too
+    with fs.open(f"manifest-{hash_alg_norm}.txt") as manifest_file:
+        for line in manifest_file:
+            expected_checksum, filename = line.rstrip().split(" ", 1)
+            with fs.open(filename, "rb") as data_file:
+                hash = hashlib.new(hash_alg, data=data_file.read())
+                assert hash.hexdigest() == expected_checksum
+
+    with fs.open(f"tagmanifest-{hash_alg_norm}.txt") as tagmanifest_file:
+        for line in tagmanifest_file:
+            expected_checksum, filename = line.rstrip().split(" ", 1)
+            with fs.open(filename, "rb") as tag_file:
+                hash = hashlib.new(hash_alg, data=tag_file.read())
+                assert hash.hexdigest() == expected_checksum
 
 
 def test_save_bagit_metadata(sips):
@@ -110,7 +123,7 @@ def _read_file(fs, filepath):
     with fs.open(filepath, "r") as fp:
         content = fp.read()
     return {
-        "checksum": md5(content.encode("utf-8")).hexdigest(),
+        "checksum": hashlib.md5(content.encode("utf-8")).hexdigest(),
         "size": len(content),
         "filepath": filepath,
     }
